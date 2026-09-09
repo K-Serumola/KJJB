@@ -58,7 +58,3 @@ lib/
 
 - **Dependency conflicts on install**: use `npm install --legacy-peer-deps` (already set as default via `.npmrc`)
 - **Bundling errors after changing entry files**: run `npx expo start -c` to clear cache
-
-## Team
-
-- [add names/roles here]
