@@ -13,7 +13,7 @@ Affordable, Expo-based ride-sharing app for Botswana. Matches drivers with spare
 
 - Node.js ≥ 18
 - Expo Go app on your phone (for testing)
-- A Supabase project (ask a teammate for access or credentials)
+- A Supabase project 
 
 ## Setup
 
