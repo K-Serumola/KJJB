@@ -1,0 +1,56 @@
+This is BibTeX, Version 0.99e
+Capacity: max_strings=200000, hash_size=200000, hash_prime=170003
+The top-level auxiliary file: main.aux
+Reallocating 'name_of_file' (item size: 1) to 26 items.
+A level-1 auxiliary file: ./TeX_files/chapter01.aux
+Reallocating 'name_of_file' (item size: 1) to 26 items.
+A level-1 auxiliary file: ./TeX_files/chapter02.aux
+Reallocating 'name_of_file' (item size: 1) to 25 items.
+A level-1 auxiliary file: ./TeX_files/chapter3.aux
+Reallocating 'name_of_file' (item size: 1) to 5 items.
+The style file: agsm.bst
+Reallocating 'name_of_file' (item size: 1) to 5 items.
+Reallocating 'name_of_file' (item size: 1) to 26 items.
+A level-1 auxiliary file: ./TeX_files/appendixA.aux
+Database file #1: bibo.bib
+You've used 18 entries,
+            2909 wiz_defined-function locations,
+            733 strings with 7132 characters,
+and the built_in function-call counts, 60763 in all, are:
+= -- 9766
+> -- 834
+< -- 0
++ -- 4579
+- -- 252
+* -- 5108
+:= -- 12510
+add.period$ -- 29
+call.type$ -- 18
+change.case$ -- 252
+chr.to.int$ -- 17
+cite$ -- 18
+duplicate$ -- 233
+empty$ -- 528
+format.name$ -- 301
+if$ -- 10835
+int.to.chr$ -- 6
+int.to.str$ -- 0
+missing$ -- 7
+newline$ -- 68
+num.names$ -- 185
+pop$ -- 108
+preamble$ -- 1
+purify$ -- 270
+quote$ -- 0
+skip$ -- 208
+stack$ -- 0
+substring$ -- 13637
+swap$ -- 34
+text.length$ -- 252
+text.prefix$ -- 0
+top$ -- 0
+type$ -- 72
+warning$ -- 0
+while$ -- 391
+width$ -- 0
+write$ -- 244
