@@ -117,7 +117,3 @@ You need two accounts: one driver and one passenger (switch role on the Profile 
 - **Login says "Email not confirmed":** turn off **Confirm email** in Supabase (see Database).
 - **App cannot reach Supabase:** the free-tier project may be paused. Open the project in the dashboard and click **Restore project**.
 - **Commands say "Project root directory not found":** run them from the folder that contains `package.json`.
-
-## Team
-
-- _Add names and roles here_
