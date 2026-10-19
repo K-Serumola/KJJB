@@ -16,6 +16,24 @@ export async function postRide(
     return data;
 }
 
+export async function getRide(rideId: string): Promise<Ride> {
+    const { data, error } = await supabase
+        .from('rides').select('*').eq('id', rideId).single();
+    if (error) throw error;
+    return data;
+}
+
+export async function takeSeats(rideId: string, n: number) {
+    const ride = await getRide(rideId);
+    if (ride.seats_available < n) throw new Error('Not enough seats left');
+    const left = ride.seats_available - n;
+    const { error } = await supabase
+        .from('rides')
+        .update({ seats_available: left, status: left === 0 ? 'full' : ride.status })
+        .eq('id', rideId);
+    if (error) throw error;
+}
+
 async function setStatus(rideId: string, status: Ride['status']) {
     const { error } = await supabase.from('rides').update({ status }).eq('id', rideId);
     if (error) throw error;

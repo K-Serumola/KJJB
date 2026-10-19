@@ -7,6 +7,7 @@ export default function TabsLayout() {
             <Tabs.Screen name="rides" options={{ title: 'Rides' }} />
             <Tabs.Screen name="profile" options={{ title: 'Profile' }} />
             <Tabs.Screen name="post-ride" options={{ title: 'Post Ride' }} />
+            <Tabs.Screen name="requests" options={{ title: 'Requests' }} />
         </Tabs>
     );
 }

@@ -46,3 +46,15 @@ export interface MatchResult {
     score: number | null;
     created_at: string;
 }
+
+export type RequestWithPassenger = RideRequest & {
+    profiles?: { full_name: string | null } | null;
+};
+
+export interface RideMatch {
+    ride: Ride;
+    pickup_distance_m: number;
+    detour_m: number;
+    time_diff_min: number;
+    score: number;
+}

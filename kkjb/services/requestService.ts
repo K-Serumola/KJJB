@@ -46,3 +46,24 @@ export async function getRequestHistory(userId: string): Promise<RideRequest[]> 
     if (error) throw error;
     return data;
 }
+import { RequestWithPassenger } from '../types';
+
+export async function getRequestsForDriver(driverId: string): Promise<RequestWithPassenger[]> {
+    const { data, error } = await supabase
+        .from('ride_requests')
+        .select('*, rides!inner(driver_id), profiles(full_name)')
+        .eq('rides.driver_id', driverId)
+        .order('created_at', { ascending: false });
+    if (error) throw error;
+    return data as RequestWithPassenger[];
+}
+
+import { RideMatch } from '../types';
+
+export async function findMatches(requestId: string): Promise<RideMatch[]> {
+    const { data, error } = await supabase.functions.invoke('find-matches', {
+        body: { request_id: requestId },
+    });
+    if (error) throw error;
+    return data.matches;
+}
