@@ -1,116 +1,302 @@
-import { useCallback, useState } from 'react';
-import { View, Text, TextInput, Pressable, StyleSheet, Alert, ScrollView } from 'react-native';
-import { useFocusEffect } from 'expo-router';
+import React, { useState } from 'react';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Switch } from 'react-native';
+import { useRouter } from 'expo-router';
 import { supabase } from '../../lib/supabase';
-import { getProfile, switchRole, updateDetails } from '../../services/profileService';
-import { getRideHistory, cancelRide, completeRide } from '../../services/rideService';
-import { getRequestHistory } from '../../services/requestService';
-import { Profile as ProfileType, Ride, RideRequest } from '../../types';
+import WireframeHeader from '../../components/WireframeHeader';
+import SegmentedControl from '../../components/SegmentedControl';
+import { useAppNavigation } from '../../components/NavigationContext';
+import { Colors, ThemeMode, useTheme, useThemedStyles } from '../../components/theme';
+import { useTabBarHeight } from '../../components/layout';
+import { MOCK_USER } from '../../components/mockData';
 
-export default function Profile() {
-    const [profile, setProfile] = useState<ProfileType | null>(null);
-    const [name, setName] = useState('');
-    const [rides, setRides] = useState<Ride[]>([]);
-    const [requests, setRequests] = useState<RideRequest[]>([]);
+// Payment methods that actually exist in Botswana: mobile money, FNB eWallet
+// and cash. (No in-app bank cards - people here mostly don't pay that way.)
+const PAYMENT_METHODS = [
+    { id: 'orange', name: 'Orange Money', detail: 'Default · +267 74 ••• 892', dot: '#F97316' },
+    { id: 'myzaka', name: 'Mascom MyZaka', detail: '+267 71 ••• 410', dot: '#22C55E' },
+    { id: 'fnb', name: 'FNB eWallet', detail: '+267 72 ••• 305', dot: '#14B8A6' },
+    { id: 'cash', name: 'Cash to driver', detail: 'Pay in Pula on boarding', dot: null },
+];
 
-    const load = useCallback(async () => {
-        try {
-            const { data } = await supabase.auth.getSession();
-            const userId = data.session?.user.id;
-            if (!userId) return;
-            const p = await getProfile(userId);
-            setProfile(p);
-            setName(p.full_name ?? '');
-            if (p.role === 'driver') {
-                setRides(await getRideHistory(userId));
-                setRequests([]);
-            } else {
-                setRequests(await getRequestHistory(userId));
-                setRides([]);
-            }
-        } catch (e: any) {
-            Alert.alert('Error', e.message);
-        }
-    }, []);
+export default function ProfileScreen() {
+    const { userRole, setUserRole, endRide } = useAppNavigation();
+    const { colors, mode, setMode } = useTheme();
+    const styles = useThemedStyles(createStyles);
+    const tabBarHeight = useTabBarHeight();
+    const router = useRouter();
+    const isDriverMode = userRole === 'driver';
 
-    useFocusEffect(useCallback(() => { load(); }, [load]));
+    const [pinVerification, setPinVerification] = useState(true);
+    const [notifications, setNotifications] = useState(true);
 
-    async function run(action: () => Promise<void>, message?: string) {
-        try {
-            await action();
-            if (message) Alert.alert(message);
-            load();
-        } catch (e: any) {
-            Alert.alert('Error', e.message);
-        }
-    }
+    const handleToggleDriverMode = (val: boolean) => {
+        setUserRole(val ? 'driver' : 'passenger');
+    };
 
-    if (!profile) return <View style={styles.center}><Text>Loading...</Text></View>;
+    // The ONE place to log out. Ends the Supabase session, clears the demo
+    // ride/role, then goes back to the login screen (replace = you can't
+    // swipe back into the app).
+    const handleLogout = async () => {
+        await supabase.auth.signOut();
+        endRide();
+        setUserRole('passenger');
+        router.replace('/(auth)/login' as any);
+    };
 
-    const isDriver = profile.role === 'driver';
+    const switchColors = { false: colors.switchOff, true: colors.accent };
 
     return (
-        <ScrollView contentContainerStyle={styles.container}>
-            <Text style={styles.title}>Profile</Text>
-            <Text>Current role: {profile.role}</Text>
+        <View style={styles.container}>
+            <WireframeHeader title="Profile" subtitle="Account and settings" />
 
-            <TextInput style={styles.input} value={name} onChangeText={setName} placeholder="Full name" />
-            <Pressable style={styles.button} onPress={() => run(() => updateDetails(profile.id, name), 'Saved')}>
-                <Text style={styles.buttonText}>Save details</Text>
-            </Pressable>
-            <Pressable style={styles.buttonAlt} onPress={() => run(() => switchRole(profile.id))}>
-                <Text style={styles.buttonText}>Switch to {isDriver ? 'passenger' : 'driver'}</Text>
-            </Pressable>
+            {/* Bottom padding = the floating tab bar's height, so Log out and
+                the version line can scroll fully clear of it. */}
+            <ScrollView
+                style={styles.scroll}
+                contentContainerStyle={[styles.scrollContent, { paddingBottom: tabBarHeight + 16 }]}
+                showsVerticalScrollIndicator={false}
+            >
+                {/* Header */}
+                <View style={styles.userRow}>
+                    <View style={styles.avatar}>
+                        <Text style={styles.avatarText}>{MOCK_USER.initials}</Text>
+                    </View>
+                    <View style={styles.userInfo}>
+                        <Text style={styles.userName}>{MOCK_USER.name}</Text>
+                        <Text style={styles.userEmail}>{MOCK_USER.email}</Text>
+                        <Text style={styles.userMeta}>
+                            <Text style={styles.starIcon}>★ </Text>
+                            {MOCK_USER.rating} ·{' '}
+                            {MOCK_USER.isVerifiedStudent && (
+                                <Text style={styles.verifiedText}>Verified UB student</Text>
+                            )}
+                        </Text>
+                    </View>
+                </View>
 
-            <Text style={styles.heading}>{isDriver ? 'My rides' : 'My requests'}</Text>
-
-            {isDriver && rides.length === 0 && <Text style={styles.empty}>No rides yet.</Text>}
-            {isDriver && rides.map((r) => (
-                <View key={r.id} style={styles.card}>
-                    <Text style={styles.cardTitle}>{new Date(r.departure_time).toLocaleString()}</Text>
-                    <Text>{r.seats_available} seat(s) left · {r.status}</Text>
-                    {(r.status === 'active' || r.status === 'full') && (
-                        <View style={styles.row}>
-                            <Pressable style={styles.accept} onPress={() => run(() => completeRide(r.id))}>
-                                <Text style={styles.buttonText}>Complete</Text>
-                            </Pressable>
-                            <Pressable style={styles.decline} onPress={() => run(() => cancelRide(r.id))}>
-                                <Text style={styles.buttonText}>Cancel</Text>
-                            </Pressable>
+                {/* Driver mode */}
+                <View style={styles.card}>
+                    <View style={styles.rowBetween}>
+                        <View style={styles.flexShrink}>
+                            <Text style={styles.rowTitle}>
+                                {isDriverMode ? 'Driver mode' : 'Switch to driver mode'}
+                            </Text>
+                            <Text style={styles.rowSubtitle}>
+                                {isDriverMode
+                                    ? 'Sharing seats on your daily route'
+                                    : 'Offer seats and offset fuel costs'}
+                            </Text>
                         </View>
+                        <Switch
+                            value={isDriverMode}
+                            onValueChange={handleToggleDriverMode}
+                            trackColor={switchColors}
+                            thumbColor={colors.switchThumb}
+                        />
+                    </View>
+
+                    {isDriverMode && (
+                        <>
+                            <View style={styles.divider} />
+                            <Text style={styles.metaLine}>P360.00 earned · 18 rides · 88% seat fill</Text>
+                            <View style={[styles.rowBetween, styles.topGap]}>
+                                <Text style={[styles.metaLine, styles.flexShrink]}>2016 Honda Fit · B 482 BAX</Text>
+                                <TouchableOpacity>
+                                    <Text style={styles.linkText}>Edit</Text>
+                                </TouchableOpacity>
+                            </View>
+                        </>
                     )}
                 </View>
-            ))}
 
-            {!isDriver && requests.length === 0 && <Text style={styles.empty}>No requests yet.</Text>}
-            {!isDriver && requests.map((q) => (
-                <View key={q.id} style={styles.card}>
-                    <Text style={styles.cardTitle}>{new Date(q.requested_time).toLocaleString()}</Text>
-                    <Text>{q.seats_needed} seat(s) · {q.status}</Text>
+                {/* Wallet */}
+                <Text style={styles.sectionLabel}>Wallet</Text>
+                <View style={styles.card}>
+                    <View style={styles.rowBetween}>
+                        <View>
+                            <Text style={styles.rowSubtitle}>Available balance</Text>
+                            <Text style={styles.balance}>P{MOCK_USER.walletBalance.toFixed(2)}</Text>
+                        </View>
+                        <TouchableOpacity style={styles.topUpBtn}>
+                            <Text style={styles.topUpText}>Top up</Text>
+                        </TouchableOpacity>
+                    </View>
+
+                    <View style={styles.divider} />
+
+                    {PAYMENT_METHODS.map((method) => (
+                        <TouchableOpacity key={method.id} style={styles.listRow}>
+                            <View style={[styles.dot, { backgroundColor: method.dot ?? colors.textMuted }]} />
+                            <View style={styles.flexGrow}>
+                                <Text style={styles.itemTitle}>{method.name}</Text>
+                                <Text style={styles.itemSubtitle}>{method.detail}</Text>
+                            </View>
+                            <Text style={styles.chevron}>›</Text>
+                        </TouchableOpacity>
+                    ))}
                 </View>
-            ))}
 
-            <Pressable onPress={() => supabase.auth.signOut()}>
-                <Text style={styles.logout}>Log out</Text>
-            </Pressable>
-        </ScrollView>
+                {/* Preferences */}
+                <Text style={styles.sectionLabel}>Preferences</Text>
+                <View style={styles.card}>
+                    <View style={styles.switchRow}>
+                        <View style={styles.flexShrink}>
+                            <Text style={styles.itemTitle}>PIN ride verification</Text>
+                            <Text style={styles.itemSubtitle}>Confirm identity before boarding</Text>
+                        </View>
+                        <Switch
+                            value={pinVerification}
+                            onValueChange={setPinVerification}
+                            trackColor={switchColors}
+                            thumbColor={colors.switchThumb}
+                        />
+                    </View>
+
+                    <View style={styles.divider} />
+
+                    <View style={styles.switchRow}>
+                        <View style={styles.flexShrink}>
+                            <Text style={styles.itemTitle}>Trip notifications</Text>
+                            <Text style={styles.itemSubtitle}>Driver proximity and match alerts</Text>
+                        </View>
+                        <Switch
+                            value={notifications}
+                            onValueChange={setNotifications}
+                            trackColor={switchColors}
+                            thumbColor={colors.switchThumb}
+                        />
+                    </View>
+
+                    <View style={styles.divider} />
+
+                    {/* App-wide theme: replaces the old "Dark map theme" switch. */}
+                    <Text style={styles.itemTitle}>Appearance</Text>
+                    <Text style={styles.itemSubtitle}>Applies to the whole app, map included</Text>
+                    <View style={styles.segmentGap}>
+                        <SegmentedControl<ThemeMode>
+                            options={[
+                                { value: 'light', label: 'Light' },
+                                { value: 'dark', label: 'Dark' },
+                            ]}
+                            value={mode}
+                            onChange={setMode}
+                        />
+                    </View>
+                </View>
+
+                {/* The only Log out button in the app. */}
+                <TouchableOpacity style={styles.logoutBtn} onPress={handleLogout} activeOpacity={0.8}>
+                    <Text style={styles.logoutText}>Log out</Text>
+                </TouchableOpacity>
+                <Text style={styles.versionText}>Version 1.0.0</Text>
+            </ScrollView>
+        </View>
     );
 }
 
-const styles = StyleSheet.create({
-    container: { flexGrow: 1, padding: 24, paddingTop: 60, gap: 10 },
-    center: { flex: 1, justifyContent: 'center', alignItems: 'center' },
-    title: { fontSize: 24, fontWeight: 'bold', textAlign: 'center', marginBottom: 8 },
-    heading: { fontSize: 18, fontWeight: '600', marginTop: 16 },
-    input: { borderWidth: 1, borderColor: '#ccc', borderRadius: 8, padding: 12 },
-    button: { backgroundColor: '#2563eb', padding: 14, borderRadius: 8, alignItems: 'center' },
-    buttonAlt: { backgroundColor: '#0d9488', padding: 14, borderRadius: 8, alignItems: 'center' },
-    buttonText: { color: 'white', fontWeight: '600' },
-    empty: { color: '#777' },
-    card: { borderWidth: 1, borderColor: '#ddd', borderRadius: 10, padding: 14, gap: 4 },
-    cardTitle: { fontWeight: '600' },
-    row: { flexDirection: 'row', gap: 8, marginTop: 8 },
-    accept: { flex: 1, backgroundColor: '#0d9488', padding: 10, borderRadius: 8, alignItems: 'center' },
-    decline: { flex: 1, backgroundColor: '#dc2626', padding: 10, borderRadius: 8, alignItems: 'center' },
-    logout: { color: 'red', textAlign: 'center', marginTop: 16 },
-});
+const createStyles = (c: Colors) =>
+    StyleSheet.create({
+        container: { flex: 1, backgroundColor: c.bg },
+        scroll: { flex: 1 },
+        scrollContent: { paddingHorizontal: 16, paddingTop: 16 },
+
+        userRow: {
+            flexDirection: 'row',
+            alignItems: 'center',
+            marginBottom: 20,
+            gap: 14,
+        },
+        avatar: {
+            width: 48,
+            height: 48,
+            borderRadius: 24,
+            backgroundColor: c.accent,
+            alignItems: 'center',
+            justifyContent: 'center',
+        },
+        avatarText: { color: c.onAccent, fontSize: 16, fontWeight: '600' },
+        userInfo: { flex: 1 },
+        userName: { color: c.textPrimary, fontSize: 17, fontWeight: '600' },
+        userEmail: { color: c.textSecondary, fontSize: 12.5, marginTop: 1 },
+        userMeta: { color: c.textSecondary, fontSize: 12, marginTop: 4 },
+        starIcon: { color: c.star },
+        verifiedText: { color: c.success },
+
+        card: {
+            backgroundColor: c.surface,
+            borderRadius: 14,
+            padding: 16,
+            marginBottom: 20,
+            borderWidth: 1,
+            borderColor: c.border,
+        },
+        divider: {
+            height: 1,
+            backgroundColor: c.border,
+            marginVertical: 12,
+        },
+        rowBetween: {
+            flexDirection: 'row',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+        },
+        switchRow: {
+            flexDirection: 'row',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+        },
+        flexShrink: { flex: 1, marginRight: 12 },
+        flexGrow: { flex: 1 },
+        topGap: { marginTop: 8 },
+        segmentGap: { marginTop: 12 },
+
+        rowTitle: { color: c.textPrimary, fontSize: 14.5, fontWeight: '600' },
+        rowSubtitle: { color: c.textSecondary, fontSize: 12, marginTop: 2 },
+        metaLine: { color: c.textSecondary, fontSize: 12.5, marginTop: 2 },
+        linkText: { color: c.accentText, fontSize: 12.5, fontWeight: '600' },
+
+        sectionLabel: {
+            color: c.textMuted,
+            fontSize: 11.5,
+            fontWeight: '600',
+            marginBottom: 8,
+            marginLeft: 2,
+        },
+
+        balance: { color: c.textPrimary, fontSize: 20, fontWeight: '600', marginTop: 2 },
+        topUpBtn: {
+            backgroundColor: c.accent,
+            paddingHorizontal: 14,
+            paddingVertical: 8,
+            borderRadius: 8,
+        },
+        topUpText: { color: c.onAccent, fontSize: 12.5, fontWeight: '600' },
+
+        listRow: {
+            flexDirection: 'row',
+            alignItems: 'center',
+            paddingVertical: 9,
+            gap: 10,
+        },
+        dot: { width: 8, height: 8, borderRadius: 4 },
+        itemTitle: { color: c.textPrimary, fontSize: 13.5, fontWeight: '500' },
+        itemSubtitle: { color: c.textMuted, fontSize: 11.5, marginTop: 1 },
+        chevron: { color: c.textMuted, fontSize: 16 },
+
+        logoutBtn: {
+            alignItems: 'center',
+            paddingVertical: 13,
+            borderRadius: 12,
+            borderWidth: 1,
+            borderColor: c.danger,
+            backgroundColor: c.dangerSoft,
+            marginTop: 4,
+            marginBottom: 12,
+        },
+        logoutText: { color: c.danger, fontSize: 14, fontWeight: '600' },
+        versionText: {
+            color: c.textMuted,
+            fontSize: 10.5,
+            textAlign: 'center',
+        },
+    });
