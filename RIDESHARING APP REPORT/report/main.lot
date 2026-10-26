@@ -1,0 +1,9 @@
+\addvspace {10\p@ }
+\addvspace {10\p@ }
+\contentsline {table}{\numberline {2.1}{Comparison of existing ride-sharing and ride-hailing systems}}{7}{table.2.1}%
+\addvspace {10\p@ }
+\contentsline {table}{\numberline {3.1}{Operations of the entity classes}}{25}{table.3.1}%
+\contentsline {table}{\numberline {3.2}{Operations of \texttt {RideService} and \texttt {RequestService}}}{27}{table.3.2}%
+\contentsline {table}{\numberline {3.3}{Operations of \texttt {MatchingService}}}{28}{table.3.3}%
+\contentsline {table}{\numberline {3.4}{Traceability of requirements to components and classes}}{28}{table.3.4}%
+\addvspace {10\p@ }

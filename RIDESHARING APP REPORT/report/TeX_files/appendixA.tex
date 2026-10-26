@@ -1,0 +1,230 @@
+\chapter{Requirements Catalogue}
+\label{app:catalogue}
+
+Each requirement is listed with the non-functional requirements (NFR) that apply to it.
+
+\section{Functional Requirements}
+
+\begin{minipage}{\textwidth}
+\small
+\begin{tabular}{|>{\raggedright\arraybackslash}p{0.22\textwidth}|>{\raggedright\arraybackslash}p{0.68\textwidth}|}
+\hline
+\textbf{Requirement ID} & RQ01 \\
+\hline
+\textbf{Requirement Description} & \textbf{User Registration and Authentication} --- Users shall be able to create and manage an account. The system shall allow users to register the required account information and authenticate their identities before accessing protected functionality. Authentication credentials shall be securely handled by the authentication service. \\
+\hline
+\textbf{Non-functional Requirements} & NFR01 Security --- authentication credentials secured through appropriate access controls. \\
+\hline
+\end{tabular}
+\end{minipage}
+\medskip
+ 
+\begin{minipage}{\textwidth}
+\small
+\begin{tabular}{|>{\raggedright\arraybackslash}p{0.22\textwidth}|>{\raggedright\arraybackslash}p{0.68\textwidth}|}
+\hline
+\textbf{Requirement ID} & RQ02 \\
+\hline
+\textbf{Requirement Description} & \textbf{User Roles and Profiles} --- Users shall be able to maintain a profile and interact with the system as a driver or passenger. The system shall allow an authenticated user to operate as a driver or passenger and shall store the relevant profile information associated with the user's account and role. \\
+\hline
+\textbf{Non-functional Requirements} & NFR01 Security --- role-based access protection; \newline NFR02 Reliability --- profile and role data stored without inconsistency. \\
+\hline
+\end{tabular}
+\end{minipage}
+\medskip
+ 
+\begin{minipage}{\textwidth}
+\small
+\begin{tabular}{|>{\raggedright\arraybackslash}p{0.22\textwidth}|>{\raggedright\arraybackslash}p{0.68\textwidth}|}
+\hline
+\textbf{Requirement ID} & RQ03 \\
+\hline
+\textbf{Requirement Description} & \textbf{Driver Ride Posting} --- Drivers shall be able to offer available seats on a planned journey. The system shall allow drivers to create and publish a ride offer by entering their origin, destination, departure time and number of available seats. The ride offer shall be stored and made available for matching and searching. \\
+\hline
+\textbf{Non-functional Requirements} & NFR02 Reliability --- consistent seat availability data; \newline NFR03 Performance --- ride offers processed within a reasonable time. \\
+\hline
+\end{tabular}
+\end{minipage}
+\medskip
+ 
+\begin{minipage}{\textwidth}
+\small
+\begin{tabular}{|>{\raggedright\arraybackslash}p{0.22\textwidth}|>{\raggedright\arraybackslash}p{0.68\textwidth}|}
+\hline
+\textbf{Requirement ID} & RQ04 \\
+\hline
+\textbf{Requirement Description} & \textbf{Passenger Ride Request} --- Passengers shall be able to request a ride for a planned journey. The system shall allow passengers to submit a ride request containing their origin, destination and relevant travel information. The request shall be stored and made available for matching suitable ride offers. \\
+\hline
+\textbf{Non-functional Requirements} & NFR02 Reliability --- accurate request data handling; \newline NFR03 Performance --- timely request submission and storage. \\
+\hline
+\end{tabular}
+\end{minipage}
+\medskip
+ 
+\begin{minipage}{\textwidth}
+\small
+\begin{tabular}{|>{\raggedright\arraybackslash}p{0.22\textwidth}|>{\raggedright\arraybackslash}p{0.68\textwidth}|}
+\hline
+\textbf{Requirement ID} & RQ05 \\
+\hline
+\textbf{Requirement Description} & \textbf{Ride Matching} --- Users shall be able to identify rides that are compatible with their journeys. The system shall compare relevant driver and passenger journey information, including origin, destination, departure time, available seating and route compatibility, and shall identify potential compatible rides according to the implemented matching criteria. \\
+\hline
+\textbf{Non-functional Requirements} & NFR03 Performance --- matches generated within a reasonable period; \newline NFR04 Location accuracy --- accurate route/location comparison; \newline NFR05 Scalability --- matching supports increasing rides/requests. \\
+\hline
+\end{tabular}
+\end{minipage}
+\medskip
+ 
+\begin{minipage}{\textwidth}
+\small
+\begin{tabular}{|>{\raggedright\arraybackslash}p{0.22\textwidth}|>{\raggedright\arraybackslash}p{0.68\textwidth}|}
+\hline
+\textbf{Requirement ID} & RQ06 \\
+\hline
+\textbf{Requirement Description} & \textbf{Ride Request Management} --- Drivers shall be able to respond to passenger requests. The system shall allow drivers to view requests associated with their ride offers and accept or decline individual requests. The corresponding request status shall be updated and stored. \\
+\hline
+\textbf{Non-functional Requirements} & NFR02 Reliability --- status updates stored consistently; \newline NFR06 Usability --- drivers can respond with minimal difficulty. \\
+\hline
+\end{tabular}
+\end{minipage}
+\medskip
+ 
+\begin{minipage}{\textwidth}
+\small
+\begin{tabular}{|>{\raggedright\arraybackslash}p{0.22\textwidth}|>{\raggedright\arraybackslash}p{0.68\textwidth}|}
+\hline
+\textbf{Requirement ID} & RQ07 \\
+\hline
+\textbf{Requirement Description} & \textbf{Ride Status Management} --- Users shall be able to know the status of a ride or request. The system shall maintain and update ride and request statuses, including relevant states such as requested, accepted, completed and cancelled. Updated statuses shall be available to the relevant users. \\
+\hline
+\textbf{Non-functional Requirements} & NFR02 Reliability --- statuses updated without data loss or inconsistency. \\
+\hline
+\end{tabular}
+\end{minipage}
+\medskip
+ 
+\begin{minipage}{\textwidth}
+\small
+\begin{tabular}{|>{\raggedright\arraybackslash}p{0.22\textwidth}|>{\raggedright\arraybackslash}p{0.68\textwidth}|}
+\hline
+\textbf{Requirement ID} & RQ08 \\
+\hline
+\textbf{Requirement Description} & \textbf{Ride History} --- Users shall be able to view their previous rides and requests. The system shall store records of relevant ride offers, ride requests and completed rides and shall allow authenticated users to retrieve and view their own ride history. \\
+\hline
+\textbf{Non-functional Requirements} & NFR02 Reliability --- historical records retained accurately. \\
+\hline
+\end{tabular}
+\end{minipage}
+\medskip
+ 
+\begin{minipage}{\textwidth}
+\small
+\begin{tabular}{|>{\raggedright\arraybackslash}p{0.22\textwidth}|>{\raggedright\arraybackslash}p{0.68\textwidth}|}
+\hline
+\textbf{Requirement ID} & RQ09 \\
+\hline
+\textbf{Requirement Description} & \textbf{Interactive Map} --- Users shall be able to view and select locations associated with their journeys. The system shall provide an interactive map through which users can select or view relevant origin and destination locations. The selected location information shall be associated with the relevant ride offer or request. \\
+\hline
+\textbf{Non-functional Requirements} & NFR04 Location accuracy --- accurate locations/routes from mapping services; \newline NFR06 Usability --- simple location selection. \\
+\hline
+\end{tabular}
+\end{minipage}
+\medskip
+ 
+\begin{minipage}{\textwidth}
+\small
+\begin{tabular}{|>{\raggedright\arraybackslash}p{0.22\textwidth}|>{\raggedright\arraybackslash}p{0.68\textwidth}|}
+\hline
+\textbf{Requirement ID} & RQ10 \\
+\hline
+\textbf{Requirement Description} & \textbf{Notifications} --- Users shall receive notifications about relevant ride events. The system should notify relevant users when events occur, including new ride requests, accepted or declined requests and relevant ride-status changes. \\
+\hline
+\textbf{Non-functional Requirements} & NFR03 Performance --- timely delivery; \newline NFR07 Availability --- notifications delivered while core services are accessible. \\
+\hline
+\end{tabular}
+\end{minipage}
+\medskip
+ 
+\begin{minipage}{\textwidth}
+\small
+\begin{tabular}{|>{\raggedright\arraybackslash}p{0.22\textwidth}|>{\raggedright\arraybackslash}p{0.68\textwidth}|}
+\hline
+\textbf{Requirement ID} & RQ11 \\
+\hline
+\textbf{Requirement Description} & \textbf{Ride Search and Filtering} --- Passengers shall be able to search for available rides that meet their travel requirements. The system shall allow passengers to search for available ride offers and apply relevant criteria, such as destination, departure time and available seats, to narrow the displayed results. \\
+\hline
+\textbf{Non-functional Requirements} & NFR03 Performance --- search results returned promptly; \newline NFR06 Usability --- filtering with minimal difficulty. \\
+\hline
+\end{tabular}
+\end{minipage}
+\medskip
+ 
+\begin{minipage}{\textwidth}
+\small
+\begin{tabular}{|>{\raggedright\arraybackslash}p{0.22\textwidth}|>{\raggedright\arraybackslash}p{0.68\textwidth}|}
+\hline
+\textbf{Requirement ID} & RQ12 \\
+\hline
+\textbf{Requirement Description} & \textbf{Data Storage and Retrieval} --- The system shall retain the information required to operate the ride-sharing service. The system should store and retrieve user profiles, ride offers, ride requests, ride statuses, seating information and ride histories using the project's database. \\
+\hline
+\textbf{Non-functional Requirements} & NFR02 Reliability --- data stored without loss or inconsistency; \newline NFR05 Scalability --- database supports growing data volume. \\
+\hline
+\end{tabular}
+\end{minipage}
+\medskip
+ 
+\begin{minipage}{\textwidth}
+\small
+\begin{tabular}{|>{\raggedright\arraybackslash}p{0.22\textwidth}|>{\raggedright\arraybackslash}p{0.68\textwidth}|}
+\hline
+\textbf{Requirement ID} & RQ13 \\
+\hline
+\textbf{Requirement Description} & \textbf{Access Control} --- Users shall only access functionality and information appropriate to their account. The system shall restrict protected functionality and user-specific information according to the authenticated user's account and role. \\
+\hline
+\textbf{Non-functional Requirements} & NFR01 Security --- enforced through authentication and access controls. \\
+\hline
+\end{tabular}
+\end{minipage}
+\medskip
+ 
+\begin{minipage}{\textwidth}
+\small
+\begin{tabular}{|>{\raggedright\arraybackslash}p{0.22\textwidth}|>{\raggedright\arraybackslash}p{0.68\textwidth}|}
+\hline
+\textbf{Requirement ID} & RQ14 \\
+\hline
+\textbf{Requirement Description} & \textbf{Mobile Application Support} --- Users shall be able to access the ride-sharing system through supported mobile devices. The system shall provide its core ride-sharing functionality through the developed mobile application on the supported Android and iOS platforms. \\
+\hline
+\textbf{Non-functional Requirements} & NFR06 Usability --- consistent, easy-to-use mobile interface; \newline NFR07 Availability --- core functionality accessible on supported platforms. \\
+\hline
+\end{tabular}
+\end{minipage}
+\medskip
+ 
+\begin{minipage}{\textwidth}
+\small
+\begin{tabular}{|>{\raggedright\arraybackslash}p{0.22\textwidth}|>{\raggedright\arraybackslash}p{0.68\textwidth}|}
+\hline
+\textbf{Requirement ID} & RQ15 \\
+\hline
+\textbf{Requirement Description} & \textbf{Ride Matching Results} --- Users shall receive the results of the ride-matching process. The system shall process submitted driver and passenger journey information and return potential compatible ride matches based on the implemented matching criteria. \\
+\hline
+\textbf{Non-functional Requirements} & NFR03 Performance --- results generated within a reasonable period; \newline NFR04 Location accuracy --- accurate matches based on location/route data. \\
+\hline
+\end{tabular}
+\end{minipage}
+\medskip
+ 
+\begin{minipage}{\textwidth}
+\small
+\begin{tabular}{|>{\raggedright\arraybackslash}p{0.22\textwidth}|>{\raggedright\arraybackslash}p{0.68\textwidth}|}
+\hline
+\textbf{Requirement ID} & RQ16 \\
+\hline
+\textbf{Requirement Description} & \textbf{Core Task Completion} --- Users shall be able to complete the core tasks required to use the ride-sharing system. The system should provide interfaces that allow drivers and passengers to complete the core tasks defined. The usability of these interfaces shall be evaluated using the System Usability Scale (SUS). \\
+\hline
+\textbf{Non-functional Requirements} & NFR06 Usability --- evaluated via the System Usability Scale (SUS). \\
+\hline
+\end{tabular}
+\end{minipage}
+\medskip

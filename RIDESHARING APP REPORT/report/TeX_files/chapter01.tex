@@ -1,0 +1,33 @@
+\chapter{Introduction}
+\label{ch:intro}
+
+\section{Project Overview}
+
+The fundamental issue addressed by this project is the limited availability of convenient, localised, and affordable peer-to-peer ride-sharing services for everyday commuters in Botswana. Urban mobility in cities such as Gaborone can present financial and logistical challenges for commuters who depend on private vehicles or public transport. Existing informal transport systems provide important mobility services in areas where formal transport provision may be limited, but they can also experience challenges relating to coordination, service coverage, and reliability \citep{cervero2007}.
+
+Local reporting has also highlighted challenges associated with public transport routes in Botswana. For example, a 2013 report on combi operations in Francistown described concerns regarding route extensions and the difficulties experienced by operators when routes did not adequately serve particular areas \citep{kebareng2013}. Such issues illustrate how the availability and configuration of transport routes can affect access to destinations and the operation of local transport services.
+
+Ride-sharing provides an alternative approach in which people travelling along similar routes can share available vehicle capacity. Research on ride-sharing has identified potential benefits including reduced travel costs, improved utilisation of available vehicle capacity, and reductions in the number of vehicles required for some journeys \citep{agatz2012,furuhata2013}. However, effective ride-sharing requires mechanisms for identifying compatible drivers and passengers based on factors such as route, departure time, available seating, and acceptable additional travel.
+
+To address this opportunity, a peer-to-peer (P2P), geolocation-based ride-sharing mobile application is being developed for urban commuting in Botswana. The system is intended to provide a localised platform through which private vehicle owners with available seats can connect with passengers travelling along compatible routes, allowing commuting costs to be shared. The application is being developed using Expo and React Native for cross-platform mobile development, with Supabase providing backend services including authentication and database functionality.
+
+\section{Requirements}
+
+The system's requirements are summarised at a high level below and are divided into primary and secondary requirements. The complete requirement catalogue, including the full functional and non-functional specifications, is provided in Appendix~\ref{app:catalogue}.
+
+\paragraph{Primary Requirements}
+\begin{itemize}
+  \item Users shall be able to register and authenticate before accessing protected functionality.
+  \item Drivers shall be able to post a ride offer specifying their origin, destination, departure time and available seats.
+  \item Passengers shall be able to submit a ride request specifying their origin, destination and travel information.
+  \item The system shall match drivers and passengers based on route, location, departure-time and seating compatibility.
+  \item Drivers shall be able to accept or decline incoming ride requests.
+  \item The system shall store and retrieve user profiles, ride offers, ride requests and ride histories.
+\end{itemize}
+
+\paragraph{Secondary Requirements}
+\begin{itemize}
+  \item Users shall be able to view the current status of a ride or request.
+  \item Users shall be able to view their history of previous rides and requests.
+  \item Users shall be able to view and select locations using an interactive map.
+\end{itemize}

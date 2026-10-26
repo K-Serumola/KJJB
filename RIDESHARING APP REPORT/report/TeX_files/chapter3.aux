@@ -1,0 +1,124 @@
+\relax 
+\providecommand\hyper@newdestlabel[2]{}
+\@writefile{toc}{\contentsline {chapter}{\numberline {3}System Analysis and Design}{17}{chapter*.16}\protected@file@percent }
+\@writefile{lof}{\addvspace {10\p@ }}
+\@writefile{lot}{\addvspace {10\p@ }}
+\newlabel{ch:design}{{3}{17}{System Analysis and Design}{chapter*.16}{}}
+\@writefile{toc}{\contentsline {section}{\numberline {3.1}Requirement Analysis}{17}{section*.17}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {3.1.1}Major Use Case Scenarios}{17}{subsection*.19}\protected@file@percent }
+\@writefile{toc}{\contentsline {paragraph}{Use Case 1: Requesting a Ride and Matching (Complex)}{17}{section*.20}\protected@file@percent }
+\@writefile{lof}{\contentsline {figure}{\numberline {3.1}{\ignorespaces Use Case Diagram for the ride-sharing system}}{18}{figure.18}\protected@file@percent }
+\newlabel{fig:usecase}{{3.1}{18}{Use Case Diagram for the ride-sharing system}{figure.18}{}}
+\@writefile{toc}{\contentsline {paragraph}{Use Case 2: Posting a Ride (Major)}{18}{section*.26}\protected@file@percent }
+\citation{supabase2026}
+\citation{furuhata2013}
+\@writefile{toc}{\contentsline {subsection}{\numberline {3.1.2}Identification of Classes from Use Cases}{19}{subsection*.30}\protected@file@percent }
+\@writefile{toc}{\contentsline {section}{\numberline {3.2}Overview of Design}{19}{section*.31}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {3.2.1}System Architecture}{19}{subsection*.32}\protected@file@percent }
+\citation{furuhata2013}
+\citation{expo2026,meta2026}
+\@writefile{lof}{\contentsline {figure}{\numberline {3.2}{\ignorespaces High-level architecture of the ride-sharing system}}{20}{figure.33}\protected@file@percent }
+\newlabel{fig:architecture}{{3.2}{20}{High-level architecture of the ride-sharing system}{figure.33}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {3.2.2}Architectural Components}{20}{subsection*.34}\protected@file@percent }
+\@writefile{toc}{\contentsline {paragraph}{Expo client.}{20}{section*.35}\protected@file@percent }
+\citation{supabase2026}
+\citation{google2026a}
+\citation{google2026a}
+\citation{hong2017}
+\citation{google2026b}
+\citation{hong2017}
+\citation{google2026a}
+\@writefile{toc}{\contentsline {paragraph}{Supabase backend.}{21}{section*.36}\protected@file@percent }
+\@writefile{toc}{\contentsline {paragraph}{Edge function.}{21}{section*.37}\protected@file@percent }
+\@writefile{toc}{\contentsline {paragraph}{Google Maps Routes API.}{21}{section*.38}\protected@file@percent }
+\citation{hong2017}
+\@writefile{toc}{\contentsline {subsection}{\numberline {3.2.3}Matching Process}{22}{subsection*.39}\protected@file@percent }
+\@writefile{lof}{\contentsline {figure}{\numberline {3.3}{\ignorespaces Flow chart of the ride-matching process}}{22}{figure.40}\protected@file@percent }
+\newlabel{fig:matching}{{3.3}{22}{Flow chart of the ride-matching process}{figure.40}{}}
+\@writefile{toc}{\contentsline {section}{\numberline {3.3}Entity Relationship Diagram (ERD)}{23}{section*.41}\protected@file@percent }
+\@writefile{lof}{\contentsline {figure}{\numberline {3.4}{\ignorespaces Entity Relationship Diagram (ERD) of the database}}{23}{figure.42}\protected@file@percent }
+\newlabel{fig:erd}{{3.4}{23}{Entity Relationship Diagram (ERD) of the database}{figure.42}{}}
+\@writefile{toc}{\contentsline {section}{\numberline {3.4}Class Diagrams}{24}{section*.43}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {3.4.1}Entity Classes}{24}{subsection*.44}\protected@file@percent }
+\newlabel{sec:entityclasses}{{3.4.1}{24}{Entity Classes}{subsection*.44}{}}
+\@writefile{lof}{\contentsline {figure}{\numberline {3.5}{\ignorespaces Entity classes of the system}}{24}{figure.45}\protected@file@percent }
+\newlabel{fig:entity}{{3.5}{24}{Entity classes of the system}{figure.45}{}}
+\@writefile{toc}{\contentsline {paragraph}{Profile.}{24}{section*.46}\protected@file@percent }
+\@writefile{toc}{\contentsline {paragraph}{Ride.}{24}{section*.47}\protected@file@percent }
+\citation{stiglic2016}
+\gdef \LT@ii {\LT@entry 
+    {1}{68.61841pt}\LT@entry 
+    {1}{137.24318pt}\LT@entry 
+    {1}{202.21284pt}}
+\@writefile{toc}{\contentsline {paragraph}{RideRequest.}{25}{section*.48}\protected@file@percent }
+\@writefile{toc}{\contentsline {paragraph}{MatchResult.}{25}{section*.49}\protected@file@percent }
+\@writefile{lot}{\contentsline {table}{\numberline {3.1}{Operations of the entity classes}}{25}{table.3.1}\protected@file@percent }
+\newlabel{tab:entityops}{{3.1}{25}{Operations of the entity classes}{table.3.1}{}}
+\citation{agatz2012,stiglic2016}
+\@writefile{toc}{\contentsline {subsection}{\numberline {3.4.2}Service Classes}{26}{subsection*.50}\protected@file@percent }
+\newlabel{sec:serviceclasses}{{3.4.2}{26}{Service Classes}{subsection*.50}{}}
+\@writefile{lof}{\contentsline {figure}{\numberline {3.6}{\ignorespaces Service classes of the system}}{26}{figure.51}\protected@file@percent }
+\newlabel{fig:service}{{3.6}{26}{Service classes of the system}{figure.51}{}}
+\@writefile{toc}{\contentsline {paragraph}{SupabaseClient and ProfileService.}{26}{section*.52}\protected@file@percent }
+\@writefile{toc}{\contentsline {paragraph}{RideService and RequestService.}{26}{section*.53}\protected@file@percent }
+\gdef \LT@iii {\LT@entry 
+    {1}{85.32089pt}\LT@entry 
+    {1}{162.29056pt}\LT@entry 
+    {1}{160.46298pt}}
+\citation{stiglic2016}
+\citation{stiglic2016}
+\@writefile{lot}{\contentsline {table}{\numberline {3.2}{Operations of \texttt  {RideService} and \texttt  {RequestService}}}{27}{table.3.2}\protected@file@percent }
+\newlabel{tab:serviceops}{{3.2}{27}{Operations of \texttt {RideService} and \texttt {RequestService}}{table.3.2}{}}
+\@writefile{toc}{\contentsline {paragraph}{MatchingService.}{27}{section*.54}\protected@file@percent }
+\citation{stiglic2016}
+\gdef \LT@iv {\LT@entry 
+    {1}{181.33792pt}\LT@entry 
+    {1}{214.73653pt}}
+\citation{google2026a}
+\gdef \LT@v {\LT@entry 
+    {1}{43.57104pt}\LT@entry 
+    {1}{137.24318pt}\LT@entry 
+    {1}{235.61145pt}}
+\@writefile{lot}{\contentsline {table}{\numberline {3.3}{Operations of \texttt  {MatchingService}}}{28}{table.3.3}\protected@file@percent }
+\newlabel{tab:matchingops}{{3.3}{28}{Operations of \texttt {MatchingService}}{table.3.3}{}}
+\@writefile{toc}{\contentsline {paragraph}{RouteService.}{28}{section*.55}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {3.4.3}Requirements Traceability}{28}{subsection*.56}\protected@file@percent }
+\@writefile{lot}{\contentsline {table}{\numberline {3.4}{Traceability of requirements to components and classes}}{28}{table.3.4}\protected@file@percent }
+\newlabel{tab:traceability}{{3.4}{28}{Traceability of requirements to components and classes}{table.3.4}{}}
+\@setckpt{./TeX_files/chapter3}{
+\setcounter{page}{30}
+\setcounter{equation}{0}
+\setcounter{enumi}{3}
+\setcounter{enumii}{0}
+\setcounter{enumiii}{0}
+\setcounter{enumiv}{0}
+\setcounter{footnote}{0}
+\setcounter{mpfootnote}{0}
+\setcounter{part}{0}
+\setcounter{chapter}{3}
+\setcounter{section}{4}
+\setcounter{subsection}{3}
+\setcounter{subsubsection}{0}
+\setcounter{paragraph}{0}
+\setcounter{subparagraph}{0}
+\setcounter{figure}{6}
+\setcounter{table}{4}
+\setcounter{parentequation}{0}
+\setcounter{example}{0}
+\setcounter{theorem}{0}
+\setcounter{subfigure}{0}
+\setcounter{lofdepth}{1}
+\setcounter{subtable}{0}
+\setcounter{lotdepth}{1}
+\setcounter{r@tfl@t}{0}
+\setcounter{lstnumber}{1}
+\setcounter{section@level}{2}
+\setcounter{Item}{8}
+\setcounter{Hfootnote}{0}
+\setcounter{bookmark@seq@number}{22}
+\setcounter{dummy}{0}
+\setcounter{LT@tables}{5}
+\setcounter{LT@chunks}{4}
+\setcounter{NAT@ctr}{0}
+\setcounter{lstlisting}{0}
+}

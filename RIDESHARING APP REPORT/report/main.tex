@@ -1,0 +1,63 @@
+\documentclass{ecsgdp}
+
+\usepackage{graphicx}
+\usepackage{natbib}
+\usepackage[utf8x]{inputenc}
+
+% --- additions for this report ---------------------------------
+\usepackage{longtable}
+\usepackage{array}
+\usepackage{booktabs}
+\usepackage{url}
+
+% Inserts a figure. The path may be given with or without an extension.
+% Order tried: exact path, then .pdf, then .png; if none exists, a placeholder box is shown
+% so the report still compiles before the diagrams arrive.
+\newcommand{\figbox}[2][0.95]{%
+  \IfFileExists{#2}%
+    {\includegraphics[width=#1\textwidth]{#2}}%
+    {\IfFileExists{#2.pdf}%
+      {\includegraphics[width=#1\textwidth]{#2.pdf}}%
+      {\IfFileExists{#2.png}%
+        {\includegraphics[width=#1\textwidth]{#2.png}}%
+        {\fbox{\parbox[c][6cm][c]{#1\textwidth}{\centering Insert image:\\ \texttt{#2}}}}}}}
+
+\setcounter{tocdepth}{2}
+% Reduce overfull lines caused by long monospaced names such as MatchingService.
+\setlength{\emergencystretch}{2em}
+% ---------------------------------------------------------------
+
+\begin{document}
+
+\authors{Boago Nkhii, Jaden Willams, Kaene Serumola, Katlego Baitirile}
+\title{Peer-to-Peer Ride-Sharing Mobile Application for Urban Commuting in Botswana} %project title
+\date{\today} % submission date
+
+\frontmatter
+\maketitle
+\tableofcontents
+\listoffigures
+\listoftables
+% Code listing
+% \lstlistoflistings
+
+\mainmatter
+\include{./TeX_files/chapter01}   % Introduction
+\include{./TeX_files/chapter02}   % Background Literature
+\include{./TeX_files/chapter3}    % System Analysis and Design
+%\include{./TeX_files/chapter04}  % Implementation
+%\include{./TeX_files/chapter05}  % Testing and Discussions
+%\include{./TeX_files/chapter06}  % Conclusion(s)
+
+\backmatter
+\bibliographystyle{agsm}
+\bibliography{bibo} % input of the references
+
+
+\appendix
+\makeatletter
+\@mainmattertrue
+\makeatother
+\include{./TeX_files/appendixA}   % Requirements Catalogue
+
+\end{document}
