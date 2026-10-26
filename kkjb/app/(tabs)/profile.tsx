@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Switch } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Switch, Alert } from 'react-native';
 import { useRouter } from 'expo-router';
 import { supabase } from '../../lib/supabase';
 import WireframeHeader from '../../components/WireframeHeader';
@@ -7,7 +7,8 @@ import SegmentedControl from '../../components/SegmentedControl';
 import { useAppNavigation } from '../../components/NavigationContext';
 import { Colors, ThemeMode, useTheme, useThemedStyles } from '../../components/theme';
 import { useTabBarHeight } from '../../components/layout';
-import { MOCK_USER } from '../../components/mockData';
+import { useUser } from '../../components/UserContext';
+import { switchRole } from '../../services/profileService';
 
 // Payment methods that actually exist in Botswana: mobile money, FNB eWallet
 // and cash. (No in-app bank cards - people here mostly don't pay that way.)
@@ -19,18 +20,26 @@ const PAYMENT_METHODS = [
 ];
 
 export default function ProfileScreen() {
-    const { userRole, setUserRole, endRide } = useAppNavigation();
+
+    const { endRide } = useAppNavigation();
     const { colors, mode, setMode } = useTheme();
     const styles = useThemedStyles(createStyles);
     const tabBarHeight = useTabBarHeight();
     const router = useRouter();
-    const isDriverMode = userRole === 'driver';
+    const { user, refreshProfile } = useUser();
+    const isDriverMode = user?.role === 'driver';
 
     const [pinVerification, setPinVerification] = useState(true);
     const [notifications, setNotifications] = useState(true);
 
-    const handleToggleDriverMode = (val: boolean) => {
-        setUserRole(val ? 'driver' : 'passenger');
+    const handleToggleDriverMode = async () => {
+        if (!user) return;
+        try {
+            await switchRole(user.id);   // saves to Supabase
+            await refreshProfile();      // every screen updates
+        } catch (e: any) {
+            Alert.alert('Error', e.message);
+        }
     };
 
     // The ONE place to log out. Ends the Supabase session, clears the demo
@@ -39,7 +48,6 @@ export default function ProfileScreen() {
     const handleLogout = async () => {
         await supabase.auth.signOut();
         endRide();
-        setUserRole('passenger');
         router.replace('/(auth)/login' as any);
     };
 
@@ -59,17 +67,14 @@ export default function ProfileScreen() {
                 {/* Header */}
                 <View style={styles.userRow}>
                     <View style={styles.avatar}>
-                        <Text style={styles.avatarText}>{MOCK_USER.initials}</Text>
+                        <Text style={styles.avatarText}>{user?.initials}</Text>
                     </View>
                     <View style={styles.userInfo}>
-                        <Text style={styles.userName}>{MOCK_USER.name}</Text>
-                        <Text style={styles.userEmail}>{MOCK_USER.email}</Text>
+                        <Text style={styles.userName}>{user?.fullName}</Text>
+                        <Text style={styles.userEmail}>{user?.email}</Text>
                         <Text style={styles.userMeta}>
                             <Text style={styles.starIcon}>★ </Text>
-                            {MOCK_USER.rating} ·{' '}
-                            {MOCK_USER.isVerifiedStudent && (
-                                <Text style={styles.verifiedText}>Verified UB student</Text>
-                            )}
+                            {user?.rating} · demo rating
                         </Text>
                     </View>
                 </View>
@@ -98,7 +103,7 @@ export default function ProfileScreen() {
                     {isDriverMode && (
                         <>
                             <View style={styles.divider} />
-                            <Text style={styles.metaLine}>P360.00 earned · 18 rides · 88% seat fill</Text>
+                            <Text style={styles.metaLine}>P360.00 earned · 18 rides · 88% seat fill (demo data)</Text>
                             <View style={[styles.rowBetween, styles.topGap]}>
                                 <Text style={[styles.metaLine, styles.flexShrink]}>2016 Honda Fit · B 482 BAX</Text>
                                 <TouchableOpacity>
@@ -109,21 +114,9 @@ export default function ProfileScreen() {
                     )}
                 </View>
 
-                {/* Wallet */}
-                <Text style={styles.sectionLabel}>Wallet</Text>
+                {/* Payment methods (demo: payments aren't connected yet) */}
+                <Text style={styles.sectionLabel}>Payment methods</Text>
                 <View style={styles.card}>
-                    <View style={styles.rowBetween}>
-                        <View>
-                            <Text style={styles.rowSubtitle}>Available balance</Text>
-                            <Text style={styles.balance}>P{MOCK_USER.walletBalance.toFixed(2)}</Text>
-                        </View>
-                        <TouchableOpacity style={styles.topUpBtn}>
-                            <Text style={styles.topUpText}>Top up</Text>
-                        </TouchableOpacity>
-                    </View>
-
-                    <View style={styles.divider} />
-
                     {PAYMENT_METHODS.map((method) => (
                         <TouchableOpacity key={method.id} style={styles.listRow}>
                             <View style={[styles.dot, { backgroundColor: method.dot ?? colors.textMuted }]} />
@@ -134,6 +127,7 @@ export default function ProfileScreen() {
                             <Text style={styles.chevron}>›</Text>
                         </TouchableOpacity>
                     ))}
+                    <Text style={styles.demoNote}>Demo only. Payments aren't connected yet.</Text>
                 </View>
 
                 {/* Preferences */}
@@ -142,7 +136,7 @@ export default function ProfileScreen() {
                     <View style={styles.switchRow}>
                         <View style={styles.flexShrink}>
                             <Text style={styles.itemTitle}>PIN ride verification</Text>
-                            <Text style={styles.itemSubtitle}>Confirm identity before boarding</Text>
+                            <Text style={styles.itemSubtitle}>Confirm identity before boarding (demo)</Text>
                         </View>
                         <Switch
                             value={pinVerification}
@@ -157,7 +151,7 @@ export default function ProfileScreen() {
                     <View style={styles.switchRow}>
                         <View style={styles.flexShrink}>
                             <Text style={styles.itemTitle}>Trip notifications</Text>
-                            <Text style={styles.itemSubtitle}>Driver proximity and match alerts</Text>
+                            <Text style={styles.itemSubtitle}>Driver proximity and match alerts (demo)</Text>
                         </View>
                         <Switch
                             value={notifications}
@@ -263,14 +257,7 @@ const createStyles = (c: Colors) =>
             marginLeft: 2,
         },
 
-        balance: { color: c.textPrimary, fontSize: 20, fontWeight: '600', marginTop: 2 },
-        topUpBtn: {
-            backgroundColor: c.accent,
-            paddingHorizontal: 14,
-            paddingVertical: 8,
-            borderRadius: 8,
-        },
-        topUpText: { color: c.onAccent, fontSize: 12.5, fontWeight: '600' },
+        demoNote: { color: c.textMuted, fontSize: 11.5, marginTop: 8 },
 
         listRow: {
             flexDirection: 'row',

@@ -6,11 +6,10 @@ import { getProfile } from '../../services/profileService';
 import {
     getRequestsForDriver,
     getRequestHistory,
-    acceptRequest,
+    approveRequest,
     declineRequest,
     cancelRequest,
 } from '../../services/requestService';
-import { takeSeats } from '../../services/rideService';
 import { RequestWithPassenger, Role } from '../../types';
 
 export default function Requests() {
@@ -49,12 +48,8 @@ export default function Requests() {
         }
     }
 
-    const accept = (req: RequestWithPassenger) =>
-        run(async () => {
-            if (!req.ride_id) throw new Error('This request has no ride');
-            await takeSeats(req.ride_id, req.seats_needed);
-            await acceptRequest(req.id);
-        });
+    // One database step: checks it is still pending, takes the seat, marks it accepted
+    const accept = (req: RequestWithPassenger) => run(() => approveRequest(req.id));
 
     if (role === null) return <View style={styles.container}><Text>Loading...</Text></View>;
 

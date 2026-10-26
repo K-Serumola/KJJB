@@ -1,9 +1,9 @@
 import React, { useState } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, TextInput } from 'react-native';
-import WireframeHeader from '../../components/WireframeHeader';
-import { useAppNavigation } from '../../components/NavigationContext';
-import { Colors, useTheme, useThemedStyles } from '../../components/theme';
-import { useTabBarHeight } from '../../components/layout';
+import WireframeHeader from '../components/WireframeHeader';
+import { useAppNavigation } from '../components/NavigationContext';
+import { Colors, useTheme, useThemedStyles } from '../components/theme';
+import { useTabBarHeight } from '../components/layout';
 
 interface CarpoolMatchHistory {
     id: string;

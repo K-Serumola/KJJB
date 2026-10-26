@@ -4,7 +4,7 @@ import { useRouter } from 'expo-router';
 import { useAppNavigation } from './NavigationContext';
 import { Colors, useThemedStyles } from './theme';
 import { useScreenInsets } from './layout';
-import { MOCK_USER } from './mockData';
+import { useUser } from './UserContext';
 
 interface WireframeHeaderProps {
     title: string;
@@ -23,6 +23,7 @@ export default function WireframeHeader({
     const router = useRouter();
     const styles = useThemedStyles(createStyles);
     const insets = useScreenInsets();
+    const { user } = useUser();
 
     if (floating) {
         return (
@@ -45,7 +46,7 @@ export default function WireframeHeader({
                     activeOpacity={0.8}
                     accessibilityLabel="Open account"
                 >
-                    <Text style={styles.avatarText}>{MOCK_USER.initials}</Text>
+                    <Text style={styles.avatarText}>{user?.initials}</Text>
                 </TouchableOpacity>
             </View>
         );

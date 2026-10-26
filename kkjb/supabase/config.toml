@@ -424,3 +424,13 @@ entrypoint = "./functions/find-matches/index.ts"
 # Specifies static files to be bundled with the function. Supports glob patterns.
 # For example, if you want to serve static HTML pages in your function:
 # static_files = [ "./functions/find-matches/*.html" ]
+
+[functions.compute-route]
+enabled = true
+verify_jwt = false
+entrypoint = "./functions/compute-route/index.ts"
+
+[functions.search-places]
+enabled = true
+verify_jwt = false
+entrypoint = "./functions/search-places/index.ts"

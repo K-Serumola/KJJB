@@ -23,6 +23,7 @@
     },
     "plugins": [
       "expo-router"
-    ]
+    ],
+    "scheme": "kkjb"
   }
 }

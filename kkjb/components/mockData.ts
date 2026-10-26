@@ -12,5 +12,4 @@ export const MOCK_USER = {
     email: 'neo.molefe@ub.ac.bw',
     rating: 4.95,
     walletBalance: 120, // Pula
-    isVerifiedStudent: true,
 };

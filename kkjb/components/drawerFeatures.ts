@@ -1,8 +1,8 @@
 /*
  * SIDE-MENU FEATURES - things you can ONLY find in the side menu.
  *
- * The bottom tabs already cover Drive, Activity and Account (wallet, PIN,
- * appearance, log out), so the side menu is for the extras around them.
+ * The bottom tabs already cover Drive, Activity and Account (payment methods,
+ * PIN, appearance, log out), so the side menu is for the extras around them.
  *
  * Each object below does two jobs:
  *   1. it becomes a row in the side menu, and

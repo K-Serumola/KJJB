@@ -13,12 +13,12 @@ import { SafeAreaProvider, useSafeAreaInsets } from 'react-native-safe-area-cont
 import { useAppNavigation } from './NavigationContext';
 import { Colors, useThemedStyles } from './theme';
 import { DRAWER_FEATURES } from './drawerFeatures';
-import { MOCK_USER } from './mockData';
+import { useUser } from './UserContext';
 
 /*
  * The side menu only holds things you can't find anywhere else in the app:
  *   - My regular routes, Intercity, Trusted contacts, Invite, Help
- * Drive / Activity / Account live in the bottom tabs, and wallet, PIN,
+ * Drive / Activity / Account live in the bottom tabs, and payment methods, PIN,
  * appearance and Log out live in Account - so none of that is repeated here.
  * The list of features is in components/drawerFeatures.ts.
  */
@@ -29,6 +29,7 @@ function DrawerContent() {
     const styles = useThemedStyles(createStyles);
     const insets = useSafeAreaInsets();
     const { width } = useWindowDimensions();
+    const { user } = useUser();
 
     // 82% of the screen, but never wider than 330 (so it looks right on
     // phones AND tablets). useWindowDimensions updates if the screen changes.
@@ -57,12 +58,12 @@ function DrawerContent() {
                         accessibilityLabel="Open profile"
                     >
                         <View style={styles.avatarCircle}>
-                            <Text style={styles.avatarText}>{MOCK_USER.initials}</Text>
+                            <Text style={styles.avatarText}>{user?.initials}</Text>
                         </View>
                         <View style={styles.flexGrow}>
-                            <Text style={styles.userName} numberOfLines={1}>{MOCK_USER.name}</Text>
+                            <Text style={styles.userName} numberOfLines={1}>{user?.fullName}</Text>
                             <Text style={styles.userMeta} numberOfLines={1}>
-                                ★ {MOCK_USER.rating} · View profile ›
+                                ★ {user?.rating} · View profile ›
                             </Text>
                         </View>
                     </TouchableOpacity>

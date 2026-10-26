@@ -14,7 +14,7 @@ An Expo (React Native) ride-sharing app for affordable urban commuting in Botswa
 
 - React Native with Expo and Expo Router (file-based navigation)
 - Supabase: Auth, Postgres (with Row Level Security) and Edge Functions
-- Matching: straight-line distance for now, structured so the Google Maps Routes API can be swapped in later
+- Matching: Google Maps Routes API calculates each driver's actual road route for accurate overlap matching
 
 ## Prerequisites
 
@@ -66,10 +66,21 @@ The matching logic lives in `supabase/functions/find-matches/index.ts`. Redeploy
 ```bash
 npx supabase login
 npx supabase link --project-ref <project-ref>
-npx supabase functions deploy find-matches
+npx supabase functions deploy compute-route --use-api
+npx supabase functions deploy find-matches --use-api
 ```
 
-`<project-ref>` is the part of the Supabase URL before `.supabase.co`. No secrets need to be set, because Supabase provides the URL and keys to the function automatically.
+`<project-ref>` is the part of the Supabase URL before `.supabase.co`.
+
+### Google Routes API setup
+
+The matching function calls Google Routes from Supabase, never from the Expo app. In Google Cloud, enable **Routes API** and create a key restricted to that API. Store the key only as a Supabase Edge Function secret:
+
+```bash
+npx supabase secrets set GOOGLE_ROUTES_API_KEY=your-google-routes-key
+```
+
+Then deploy both functions. `compute-route` supplies road-following previews for drivers and passengers, while `find-matches` uses the driver's stored route to compare pickup and drop-off points accurately. Both functions ask `computeRoutes` only for distance, duration and its encoded polyline. The mobile client receives the encoded polyline and never receives the Google API key.
 
 ## How matching works
 

@@ -39,3 +39,6 @@ yarn-error.*
 # generated native folders
 /ios
 /android
+/.codex-test-route-previews/assets/d1ea1496f9057eb392d5bbf3732a61b7
+/app/(tabs)/http-client.private.env.json
+/.env

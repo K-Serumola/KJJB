@@ -1,9 +1,10 @@
 declare const Deno: any;
 // @ts-ignore: npm: specifier is resolved by Deno at deploy time
 import { createClient } from 'npm:@supabase/supabase-js@2';
+// @ts-ignore: Deno requires explicit local TypeScript extensions at deploy time.
+import { computeDrivingRoute, decodePolyline, type DrivingRoute, type LatLng } from '../_shared/googleRoutes.ts';
 
-type LatLng = { lat: number; lng: number };
-type Route = { distanceM: number; durationS: number; polyline: string | null; points: LatLng[] };
+type Route = DrivingRoute;
 type Near = { distanceM: number; alongM: number };
 
 // ---------- geometry helpers ----------
@@ -45,17 +46,26 @@ function nearestOnRoute(p: LatLng, pts: LatLng[]): Near {
 }
 
 // ---------- RouteService ----------
-class RouteService {
-  // SWAP POINT: to use Google, call the Routes API here (key from Deno.env.get('GOOGLE_MAPS_API_KEY')),
-  // decode the returned polyline into `points`, and return distanceM / durationS / polyline from it.
-  async getRoute(origin: LatLng, dest: LatLng): Promise<Route> {
-    const distanceM = haversineM(origin, dest);
+function routeStoredOnRide(ride: any): Route | null {
+  if (
+    typeof ride.route_polyline !== 'string' ||
+    typeof ride.route_distance_m !== 'number' ||
+    typeof ride.est_duration_s !== 'number'
+  ) {
+    return null;
+  }
+
+  try {
+    const points = decodePolyline(ride.route_polyline);
+    if (points.length < 2) return null;
     return {
-      distanceM,
-      durationS: Math.round(distanceM / (30000 / 3600)), // assumes 30 km/h
-      polyline: null,
-      points: [origin, dest], // straight line
+      polyline: ride.route_polyline,
+      distanceM: ride.route_distance_m,
+      durationS: ride.est_duration_s,
+      points,
     };
+  } catch {
+    return null;
   }
 }
 
@@ -65,15 +75,20 @@ class MatchingService {
   private maxDetourM = 3000;
   private timeWindowMin = 60;
 
-  constructor(private routes: RouteService) {}
-
   async findMatches(request: any, rides: any[]) {
     const results: any[] = [];
     for (const ride of rides) {
-      const route = await this.routes.getRoute(
+      const route =
+        routeStoredOnRide(ride) ??
+        (await computeDrivingRoute(
           { lat: ride.origin_lat, lng: ride.origin_lng },
           { lat: ride.destination_lat, lng: ride.destination_lng },
-      );
+        ));
+      // This is included in the function response so the client can render the
+      // exact route immediately. Persisting it can be added later as a cache.
+      ride.route_polyline = route.polyline;
+      ride.route_distance_m = route.distanceM;
+      ride.est_duration_s = route.durationS;
       const pickup = this.calcPickupDistance({ lat: request.origin_lat, lng: request.origin_lng }, route);
       const dropoff = this.calcPickupDistance({ lat: request.destination_lat, lng: request.destination_lng }, route);
       const detourM = this.calcDetour(pickup, dropoff);
@@ -158,7 +173,7 @@ Deno.serve(async (req: Request) => {
         .neq('driver_id', user.id);
     if (ridesErr) throw ridesErr;
 
-    const matches = await new MatchingService(new RouteService()).findMatches(request, rides ?? []);
+    const matches = await new MatchingService().findMatches(request, rides ?? []);
 
     await admin.from('match_results').delete().eq('request_id', request_id);
     if (matches.length) {

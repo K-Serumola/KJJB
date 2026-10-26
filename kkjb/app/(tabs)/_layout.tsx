@@ -1,8 +1,9 @@
 import React, { useEffect, useState } from 'react';
-import { Tabs } from 'expo-router';
+import { Tabs, useRouter } from 'expo-router';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { Colors, useThemedStyles } from '../../components/theme';
 import { TabBarHeightProvider, useKeyboardVisible, useScreenInsets } from '../../components/layout';
+import { useNotifications } from '../../components/NotificationContext';
 
 // Taken straight from <Tabs>, so it always matches the installed
 // expo-router version.
@@ -14,18 +15,27 @@ const TAB_LABELS: Record<string, string> = {
     profile: 'Account',
 };
 
+const TAB_PATHS: Record<string, string> = {
+    index: '/(tabs)',
+    rides: '/(tabs)/rides',
+    profile: '/(tabs)/profile',
+};
+
 // A guess used for the very first frame, before the bar has measured itself.
 const FALLBACK_TAB_BAR_HEIGHT = 96;
 
+const HIDDEN_TABS = ['requests'];
+
 function CustomTabBar({
-    state,
-    descriptors,
-    navigation,
-    onHeightChange,
-}: TabBarProps & { onHeightChange: (height: number) => void }) {
+                          state,
+                          onHeightChange,
+                      }: TabBarProps & { onHeightChange: (height: number) => void }) {
     const styles = useThemedStyles(createStyles);
     const insets = useScreenInsets();
     const keyboardVisible = useKeyboardVisible();
+    const router = useRouter();                     // ← new line
+    const { unreadCount } = useNotifications();     // number shown on the Activity tab
+
 
     // While the keyboard is open the bar hides itself (otherwise it floats on
     // top of whatever you're typing into), so it takes up 0 space.
@@ -47,21 +57,14 @@ function CustomTabBar({
                 {state.routes.map((route, index) => {
                     // Screens registered with href: null (post-ride, requests)
                     // stay routable but don't get a button in the bar.
-                    const href = (descriptors[route.key].options as { href?: string | null }).href;
-                    if (href === null) return null;
+                    if (HIDDEN_TABS.includes(route.name)) return null;
 
                     const isFocused = state.index === index;
                     const label = TAB_LABELS[route.name] ?? route.name;
 
                     const onPress = () => {
-                        const event = navigation.emit({
-                            type: 'tabPress',
-                            target: route.key,
-                            canPreventDefault: true,
-                        });
-                        if (!isFocused && !event.defaultPrevented) {
-                            navigation.navigate(route.name);
-                        }
+                        if (isFocused) return;
+                        router.navigate((TAB_PATHS[route.name] ?? `/(tabs)/${route.name}`) as any);
                     };
 
                     return (
@@ -78,6 +81,11 @@ function CustomTabBar({
                             <Text style={[styles.label, isFocused && styles.labelActive]}>
                                 {label}
                             </Text>
+                            {route.name === 'rides' && unreadCount > 0 && (
+                                <View style={styles.badge}>
+                                    <Text style={styles.badgeText}>{unreadCount > 9 ? '9+' : unreadCount}</Text>
+                                </View>
+                            )}
                         </TouchableOpacity>
                     );
                 })}
@@ -98,9 +106,6 @@ export default function TabsLayout() {
                 <Tabs.Screen name="index" options={{ title: 'Drive' }} />
                 <Tabs.Screen name="rides" options={{ title: 'Activity' }} />
                 <Tabs.Screen name="profile" options={{ title: 'Account' }} />
-                {/* Backend screens not in the wireframe bar yet - still reachable
-                    by path (/post-ride, /requests), just not shown as tabs. */}
-                <Tabs.Screen name="post-ride" options={{ title: 'Post Ride', href: null }} />
                 <Tabs.Screen name="requests" options={{ title: 'Requests', href: null }} />
             </Tabs>
         </TabBarHeightProvider>
@@ -158,4 +163,14 @@ const createStyles = (c: Colors) =>
         labelActive: {
             color: c.accentText,
         },
+        badge: {
+            minWidth: 18,
+            height: 18,
+            borderRadius: 9,
+            paddingHorizontal: 5,
+            backgroundColor: c.danger,
+            alignItems: 'center',
+            justifyContent: 'center',
+        },
+        badgeText: { color: '#FFFFFF', fontSize: 10.5, fontWeight: '700' },
     });

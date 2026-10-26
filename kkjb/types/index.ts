@@ -34,6 +34,11 @@ export interface RideRequest extends Journey {
     seats_needed: number;
     requested_time: string;
     created_at: string;
+    fare_offer?: number | null;   // price the passenger offered, in Pula
+    pin?: string | null;          // 4-digit code the passenger tells the driver on boarding
+    picked_up_at?: string | null; // set when the driver has verified the PIN
+    cancelled_by?: 'driver' | 'passenger' | null; // who cancelled it, if it was cancelled
+    cancel_reason?: string | null; // why the passenger cancelled (shown to the driver)
 }
 
 export interface MatchResult {

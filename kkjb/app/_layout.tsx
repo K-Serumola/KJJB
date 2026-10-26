@@ -8,6 +8,9 @@ import { NavigationProvider } from '../components/NavigationContext';
 import { ThemeProvider, useTheme } from '../components/theme';
 import { MAX_APP_WIDTH } from '../components/layout';
 import SideMenu from '../components/SideMenu';
+import NotificationBanner from '../components/NotificationBanner';
+import { NotificationProvider } from '../components/NotificationContext';
+
 
 // Set to true to demo the UI without logging in (makes the "Skip to app
 // (temp)" link on the login screen work). Keep false for real use.
@@ -58,22 +61,15 @@ function AppShell() {
                     <Stack.Screen name="(tabs)" />
                     <Stack.Screen name="feature/[slug]" />
                 </Stack>
+
+                {/* Pops up at the top when a request arrives, is accepted, cancelled, etc. */}
+                <NotificationBanner />
             </View>
 
             {/* One side menu for the whole app (it used to be added to every
                 screen separately). It only appears when opened. */}
             <SideMenu />
         </View>
-    );
-}
-
-export default function RootLayout() {
-    return (
-        <ThemeProvider>
-            <NavigationProvider>
-                <AppShell />
-            </NavigationProvider>
-        </ThemeProvider>
     );
 }
 
@@ -87,3 +83,19 @@ const styles = StyleSheet.create({
         overflow: 'hidden',
     },
 });
+
+import { UserProvider } from '../components/UserContext';
+
+export default function RootLayout() {
+    return (
+        <ThemeProvider>
+            <UserProvider>
+                <NotificationProvider>
+                    <NavigationProvider>
+                        <AppShell />
+                    </NavigationProvider>
+                </NotificationProvider>
+            </UserProvider>
+        </ThemeProvider>
+    );
+}
