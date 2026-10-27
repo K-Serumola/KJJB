@@ -1,6 +1,277 @@
 \chapter{Implementation}
 \label{ch:implementation}
 
-% TODO: describe how the design in Chapter~\ref{ch:design} was implemented
-% (Expo/React Native screens, Supabase tables and policies, Edge function, Routes API calls).
-% Code listings go here, e.g. \begin{lstlisting}[caption={...},label={...}] ... \end{lstlisting}
+This section records how the system discussed in Chapter~\ref{ch:design} was built. It covers the tools used, the code and database rules that implement the requirements, the differences between the finished application and design, and the challenges met during development.
+
+%-----------------------------------------------
+\section{Development Environment and Tools}
+
+The mobile app is a React Native Application built with Expo and Expo Router ( file-based navigation) \citep{expo2026,meta2026}. The backend runs on Supabase, which provides authentication, a PostgreSql database with Row Level Security, and Edge Functions written in TypeScript \citep{supabase2026}. Map routes come from the Google Routes API \citep{google2026a}. During development, the application was run on physical phones through Expo Go, and the source was stored and shared in the team's Github repository.
+
+\begin{itemize}
+	\item Node.js 18 or newer; Expo SDK 58 (with Expo Router 58), React Native 0.88, React 19.3, the  Supabase JavaScript client 2.x and TypeScript 6.
+	\item The interactive map and the phone's position come from \texttt{react-native-maps} and \texttt{expo-location}.
+	\item Dependencies are installed with \texttt{npm install --legacy-peer-deps}, to prevent installation failures caused by conflicting peer dependency requirements within the Expo ecosystem. 
+	\item The app reads the Supabase project URL and the public \texttt{anon} key from an environment file that is exclude form version conrol. The \texttt{service\_role} key is never placed in the app (to prevent unrestricted admin control by hackers).
+	\item The Google Routes key is stored as a Supabase Edge Function secret (which acts as a secure cloud proxy to fetch routing data from Google and forward it back to the phone), so it never reaches the phone, preventing API key theft via reverse-engineering.
+	\end{itemize}
+	
+	%-----------------------------------------------------------------
+\section {Authentication and Profile Creation (RQ01,RQ02)}
+
+The signup screen calls the Supabase Auth service directly and passes the user's full name as metadata. A database trigger then creates the matching \texttt{profiles} row, ensuring the profile exists as soon as the account is created (Listing~\ref{lst:trigger}). The login screen signs in with an email and password, while the root layout listens for authentication changes and redirects: a signed-out user is sent to the login screen, and a signed-in user on an authentiction screen is sent into the app. The role (driver or passenger), is a column on the profile and is changed from the profile screen. 
+
+\begin{lstlisting}[language=SQL, caption={Trigger that creates a profile when a user signs up},label={lst:trigger}]
+create function handle_new_user() returns trigger
+language plpgsql security definer set search_path = public
+as $$
+begin
+	insert into profiles (id,full_name)
+	values (new.id,new.raw_user_meta_data ->> 'full_name');
+	return new;
+end;
+$$;
+
+create trigger on_auth_user_created
+	after insert on auth.users
+	for each row execute function handle_new_user();
+	\end{lstlisting}
+	
+%----------------------------------------------------------
+\section{Access Control with Row Level Security (RQ13)}
+
+Access control is enforced in the database, not only in the screens. Row Level Security is switched on for all four tables, and each table has policies that limit what a signed-in user can read or change (Listing~\ref{lst:rls}). A ride request can be read only by the passenger who made it or by the driver of the ride it points to, and match results can be read only by the passenger who requested them. There are no write policies on \texttt{match\_results}: the matching function writes them with the service role key, which bypasses these rules, so a user cannot insert or alter match scores.
+ 
+\begin{lstlisting}[language=SQL,caption={Row Level Security policies for requests and match results},label={lst:rls}]
+create policy "requests: passenger or ride driver can read"
+  on ride_requests for select to authenticated
+  using (
+    passenger_id = auth.uid()
+    or exists (select 1 from rides r
+               where r.id = ride_requests.ride_id
+                 and r.driver_id = auth.uid())
+  );
+ 
+create policy "matches: requesting passenger can read"
+  on match_results for select to authenticated
+  using (exists (select 1 from ride_requests q
+                 where q.id = match_results.request_id
+                   and q.passenger_id = auth.uid()));
+\end{lstlisting}
+ 
+Row Level Security limits which rows a user can reach, but it cannot limit which columns an allowed update may change. This is checked during security testing.
+ 
+%---------------------------------------------------------------
+\section{Implementation of Ride Matching (RQ05, RQ15)}
+ 
+Matching runs in a Supabase Edge Function, \texttt{find-matches}, which contains the \texttt{MatchingService} class from the design. The mobile app only sends the request identifier and receives the ranked list.
+ 
+\subsection{Route data}
+ 
+Each driver's road route is read from the ride record (polyline, distance and duration), where it was stored when the ride was posted. If a ride has no stored route, the function asks the Google Routes API for one and uses it for that request. The route is decoded into a list of coordinates, and each passenger point is projected onto it to find two values: how far the point is from the route, and how far along the route it lies. The call to Google is made by one shared module used by both Edge Functions (Listing~\ref{lst:google}). It asks the Routes API for the driving route with a field mask that limits the reply to the distance, duration and encoded polyline, requests a single route without live traffic, and then decodes the polyline with its own decoder. Because the routing preference ignores live traffic, the duration is a typical figure, not a live estimate.
+ 
+\begin{lstlisting}[language=Java,caption={Requesting a driving route from the Google Routes API},label={lst:google}]
+const GOOGLE_ROUTES_FIELD_MASK =
+  'routes.distanceMeters,routes.duration,routes.polyline.encodedPolyline';
+ 
+const response = await fetch(GOOGLE_ROUTES_URL, {
+  method: 'POST',
+  headers: {
+    'Content-Type': 'application/json',
+    'X-Goog-Api-Key': apiKey,              // Edge Function secret
+    'X-Goog-FieldMask': GOOGLE_ROUTES_FIELD_MASK,
+  },
+  body: JSON.stringify({
+    origin: { location: { latLng: { latitude: origin.lat, longitude: origin.lng } } },
+    destination: { location: { latLng: { latitude: destination.lat, longitude: destination.lng } } },
+    travelMode: 'DRIVE',
+    routingPreference: 'TRAFFIC_UNAWARE',
+    computeAlternativeRoutes: false,
+    units: 'METRIC',
+  }),
+});
+\end{lstlisting}
+ 
+\subsection{Compatibility and scoring}
+ 
+A ride is kept only when all the conditions in Listing~\ref{lst:matching} hold: both the pickup and the drop-off are close to the route, the pickup comes before the drop-off along the driver's direction of travel, the detour is small, and the departure times are close. The detour is approximated as twice the sum of the pickup and drop-off distances from the route, which assumes the driver leaves and rejoins the route for each stop. The limits and weights are set at the top of the class (Table~\ref{tab:thresholds}).
+ 
+\begin{lstlisting}[language=Java,caption={Compatibility test, detour estimate and score in \texttt{MatchingService}},label={lst:matching}]
+private isCompatible(pickup: Near, dropoff: Near,
+                     detourM: number, timeDiffMin: number): boolean {
+  return (
+    pickup.distanceM <= this.maxPickupDistanceM &&
+    dropoff.distanceM <= this.maxPickupDistanceM &&
+    pickup.alongM < dropoff.alongM &&   // same direction as the driver
+    detourM <= this.maxDetourM &&
+    timeDiffMin <= this.timeWindowMin
+  );
+}
+ 
+private calcDetour(pickup: Near, dropoff: Near): number {
+  return 2 * (pickup.distanceM + dropoff.distanceM);
+}
+ 
+private scoreMatch(pickupM: number, detourM: number,
+                   timeDiffMin: number): number {
+  const s =
+    0.5 * (1 - pickupM / this.maxPickupDistanceM) +
+    0.3 * (1 - detourM / this.maxDetourM) +
+    0.2 * (1 - timeDiffMin / this.timeWindowMin);
+  return Math.round(Math.max(0, Math.min(1, s)) * 100);
+}
+\end{lstlisting}
+ 
+\begin{table}[htbp]
+  \centering
+  \caption{Matching limits and score weights}
+  \label{tab:thresholds}
+  \small
+  \begin{tabular}{@{}l l p{0.42\textwidth}@{}}
+    \toprule
+    \textbf{Parameter} & \textbf{Value} & \textbf{Use} \\
+    \midrule
+    \texttt{maxPickupDistanceM} & 1000 m & Maximum distance of pickup and drop-off from the route \\
+    \texttt{maxDetourM} & 3000 m & Maximum estimated detour \\
+    \texttt{timeWindowMin} & 60 min & Maximum difference in departure time \\
+    Weights & 0.5 / 0.3 / 0.2 & Pickup distance / detour / time difference \\
+    \bottomrule
+  \end{tabular}
+\end{table}
+ 
+The score for a compatible ride is
+\[
+  S = 100 \times \left[\, 0.5\left(1-\frac{p}{P_{\max}}\right) + 0.3\left(1-\frac{d}{D_{\max}}\right) + 0.2\left(1-\frac{t}{T_{\max}}\right) \right],
+\]
+limited to the range 0 to 100, where $p$, $d$ and $t$ are the pickup distance, detour and time difference, and $P_{\max}$, $D_{\max}$ and $T_{\max}$ are the limits in Table~\ref{tab:thresholds}. Closer pickups, smaller detours and closer departure times therefore score higher, and the weights give pickup distance the most influence. % TODO: add the reason these weights were chosen
+ 
+\subsection{Running matching securely}
+ 
+The function creates two database clients. The first carries the caller's own token, so Row Level Security applies when it reads the request and the candidate rides, and the function rejects a request that does not belong to the caller. Only the second client, which uses the service role key, writes the results to \texttt{match\_results}. The candidate query also removes rides that have already left, rides without enough seats, and the caller's own rides. A second Edge Function, \texttt{compute-route}, gives drivers and passengers a road-following route preview. It checks that the caller is signed in and that the coordinates are valid before calling Google, and it returns only the encoded polyline, distance and duration.
+ 
+%---------------------------------------------------------------
+\section{Request Handling and Seat Allocation (RQ04, RQ06, RQ07)}
+ 
+Two people must not be able to take the last seat, and a request that has been cancelled must not come back to life. Both are handled in the database instead of in the app. When a driver accepts a request, the app calls a database function, \texttt{accept\_request}, which in a single step checks that the request is still pending, takes the seat, and marks the request accepted. Declining only succeeds while the request is pending, and cancelling calls a \texttt{cancel\_request} function that returns an accepted seat to the ride (Listing~\ref{lst:requests}).
+ 
+\begin{lstlisting}[language=Java,caption={Accepting and declining a request},label={lst:requests}]
+export async function approveRequest(id: string): Promise<void> {
+  const { error } = await supabase.rpc('accept_request',
+                                       { p_request_id: id });
+  if (error) throw error;
+}
+ 
+export async function declineRequest(id: string): Promise<void> {
+  const { data, error } = await supabase
+    .from('ride_requests')
+    .update({ status: 'declined' })
+    .eq('id', id)
+    .eq('status', 'pending')       // never revives a cancelled request
+    .select('id');
+  if (error) throw error;
+  if (!data || data.length === 0)
+    throw new Error('This request is no longer pending.');
+}
+\end{lstlisting}
+ 
+The requests screen reloads whenever it is opened and supports pull-to-refresh, and it also reloads when a live update arrives (Section~\ref{sec:notifications}).
+ 
+%---------------------------------------------------------------
+\section{Notifications and Live Updates (RQ07, RQ10)}
+\label{sec:notifications}
+ 
+Notifications are in-app only: they appear while the application is open, not as push notifications when it is closed. A notification provider wraps the whole app and learns about changes in two ways that feed the same code.
+ 
+\begin{enumerate}
+  \item \textbf{Supabase Realtime.} The app subscribes to changes on the \texttt{ride\_requests} and \texttt{rides} tables, so a change is pushed to the phone as soon as the row changes (Listing~\ref{lst:realtime}).
+  \item \textbf{Safety net.} Every 8 seconds, while the app is in the foreground, it re-reads the user's own requests (a driver's incoming requests, or a passenger's request history) and compares them with what it has already seen. If Realtime is switched off or drops, the notification still arrives within a few seconds.
+\end{enumerate}
+ 
+Both paths pass each request row to one function that decides what, if anything, \emph{this} user should be told. Each message is recorded under a key made of the request and its status, so the same event is never shown twice, and the first read after signing in only remembers existing rows so that old events are not announced again. A driver is told about a new request, with Accept and Decline buttons in the banner, or about a passenger cancelling, with the reason. A passenger is told when a request is accepted (with the boarding PIN), declined, started, completed or cancelled by the driver. Every change also raises a counter that the screens watch, so they reload their data.
+ 
+\begin{lstlisting}[language=Java,caption={Subscribing to live changes},label={lst:realtime}]
+const channel = supabase
+  .channel(`app-events-${userId}`)
+  .on('postgres_changes',
+      { event: '*', schema: 'public', table: 'ride_requests' },
+      onRequestChange)
+  .on('postgres_changes',
+      { event: '*', schema: 'public', table: 'rides' },
+      () => setEventTick((t) => t + 1))
+  .subscribe();
+\end{lstlisting}
+ 
+%---------------------------------------------------------------
+\section{Differences from the Design}
+ 
+The finished application differs from Chapter~\ref{ch:design} in the places listed in Table~\ref{tab:differences}.
+ 
+\begingroup\small
+\begin{longtable}{@{}>{\raggedright\arraybackslash}p{0.30\textwidth}
+                   >{\raggedright\arraybackslash}p{0.60\textwidth}@{}}
+\caption{Differences between the design and the implementation}\label{tab:differences}\\
+\toprule
+\textbf{Design (Chapter~\ref{ch:design})} & \textbf{Implementation} \\
+\midrule
+\endfirsthead
+\toprule
+\textbf{Design} & \textbf{Implementation} \\
+\midrule
+\endhead
+\bottomrule
+\endfoot
+\texttt{acceptRequest()} followed by \texttt{takeSeats()} & Accepting calls the \texttt{accept\_request} database function, which checks the request and takes the seat in one step. \\
+\texttt{SupabaseClient} wrapper class & The screens and services use the Supabase JavaScript client directly (\texttt{lib/supabase.ts}). \\
+Entity methods such as \texttt{hasFreeSeat()} and \texttt{releaseSeats()} & Entities are TypeScript data types. The behaviour is in the service modules and in database functions. \\
+Realtime updates through \texttt{subscribe()} & A notification provider subscribes to Supabase Realtime and also polls every 8 seconds as a safety net. Notifications are shown in the app only. \\
+Route always stored when a ride is posted & The route is stored when the client supplies it. If it is missing, matching fetches the route but does not save it. \\
+Detour measured as extra driving distance & The detour is estimated as twice the sum of the pickup and drop-off distances from the route. \\
+Not in the design & Fare offer on a request, a four-digit PIN for boarding, cancellation with a reason, \texttt{cancel\_ride} and \texttt{finish\_ride} database functions, an in-app notification banner, and a light and dark theme. \\
+Not implemented & Push notifications when the app is closed. Payments, ratings and driver earnings on the profile screen are demonstration data only, and the PIN verification and trip notification switches are demonstrations too. \\
+\end{longtable}
+\endgroup
+ 
+%---------------------------------------------------------------
+\section{Challenges and Solutions}
+ 
+\begin{itemize}
+  \item \textbf{Two passengers taking the last seat.} Updating seats from the app allows a race between two drivers' devices or two taps. Moving the check, the seat change and the status change into one database function removed the race.
+  \item \textbf{A cancelled request being accepted or declined.} A late action by the driver could overwrite a cancellation. Declining is now restricted to requests that are still pending, and the accept function checks the same thing.
+  \item \textbf{Keeping the Google key private.} Calling the routing service from the phone would expose the key. All Google calls were moved into Edge Functions that check the caller's sign-in, and the key is stored as a function secret.
+  \item \textbf{Live updates that depend on one channel.} Realtime can be switched off for a table or can drop on a poor connection. The 8-second re-check was added so notifications still arrive, and the record of events already shown stops the two paths from announcing the same change twice.
+  \item \textbf{Package conflicts on installation.} Several Expo packages have conflicting peer dependencies, so the project is installed with \texttt{--legacy-peer-deps}, and missing packages are added with \texttt{npx expo install}.
+  % TODO: add problems the team actually met (location permissions, API limits, polyline handling, and so on)
+\end{itemize}
+ 
+%---------------------------------------------------------------
+\section{Application Screenshots}
+ 
+Figures~\ref{fig:shot-login} to~\ref{fig:shot-requests} show the main screens of the finished application. % TODO: add a short driver flow and passenger flow walkthrough
+ 
+\begin{figure}[htbp]
+  \centering
+  \figbox[0.4]{images/app-login.png}
+  \caption{Login screen}
+  \label{fig:shot-login}
+\end{figure}
+ 
+\begin{figure}[htbp]
+  \centering
+  \figbox[0.4]{images/app-post-ride.png}
+  \caption{Driver posting a ride}
+  \label{fig:shot-post}
+\end{figure}
+ 
+\begin{figure}[htbp]
+  \centering
+  \figbox[0.4]{images/app-find-ride.png}
+  \caption{Passenger's ranked match results}
+  \label{fig:shot-find}
+\end{figure}
+ 
+\begin{figure}[htbp]
+  \centering
+  \figbox[0.4]{images/app-requests.png}
+  \caption{Driver's incoming requests}
+  \label{fig:shot-requests}
+\end{figure}
