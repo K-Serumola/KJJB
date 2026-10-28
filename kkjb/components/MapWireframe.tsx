@@ -41,6 +41,7 @@ import { cancelRequest } from '../services/cancelRequest';
 import { Place } from '../services/placeService';
 import { addRecentPlace } from '../services/recentPlaces';
 import { Ride, RideMatch, RideRequest } from '../types';
+import { startSharingLocation, useDriverPosition, distanceMeters, etaMinutes } from '../lib/tracking';
 
 type FoundRide = { match: RideMatch; driverName: string };
 type LatLng = { latitude: number; longitude: number };
@@ -121,13 +122,13 @@ export default function MapWireframe() {
     // On newer Android the screen does not shrink when the keyboard opens, so the
     // keyboard simply covered the bottom sheet. We measure how much of our screen it
     // covers and lift the sheet by that amount (works whether or not the screen resizes).
-    const containerRef = useRef<View>(null);
+    const containerRef = useRef<any>(null);
     const [kb, setKb] = useState<{ overlap: number; available: number } | null>(null);
 
     useEffect(() => {
         const show = Keyboard.addListener('keyboardDidShow', (e) => {
             const keyboardTop = e.endCoordinates.screenY;
-            containerRef.current?.measureInWindow((_x, y, _w, h) => {
+            containerRef.current?.measureInWindow((_x: number, y: number, _w: number, h: number) => {
                 setKb({
                     overlap: Math.max(0, y + h - keyboardTop),
                     available: Math.max(0, keyboardTop - y),
@@ -151,6 +152,7 @@ export default function MapWireframe() {
 
     // Passenger state
     const [fareOffer, setFareOffer] = useState(12);
+    const [seatsWanted, setSeatsWanted] = useState(1);
     const [passengerState, setPassengerState] = useState<'idle' | 'searching' | 'matched'>('idle');
     const [place, setPlace] = useState<Place | null>(null);
     const [requestId, setRequestId] = useState<string | null>(null);
@@ -348,6 +350,33 @@ export default function MapWireframe() {
         return () => sub.remove();
     }, [loadOpenRequest]);
 
+    // ---- Live tracking ----
+    // DRIVER: while at least one passenger is accepted, send my position every ~8 s.
+    const hasAccepted = rideCounts.accepted > 0;
+    useEffect(() => {
+        if (!user || !currentRide || !hasAccepted) return;
+        let stop: (() => void) | undefined;
+        let cancelled = false;
+        startSharingLocation(currentRide.id, user.id)
+            .then((s) => (cancelled ? s() : (stop = s)))
+            .catch((e) => console.warn('Tracking failed:', e?.message ?? e));
+        return () => {
+            cancelled = true;
+            stop?.();
+        };
+    }, [currentRide?.id, user?.id, hasAccepted]);
+
+    // PASSENGER: once accepted (and before pickup), listen to the driver's position.
+    const trackedRideId =
+        openRequest?.status === 'accepted' && !openRequest.picked_up_at ? openRequest.ride_id : null;
+    const driverPos = useDriverPosition(trackedRideId);
+    const etaMin =
+        driverPos && openRequest
+            ? etaMinutes(
+                distanceMeters(driverPos.lat, driverPos.lng, openRequest.origin_lat, openRequest.origin_lng),
+            )
+            : null;
+
     // Draw the saved route of the open ride (also after the app was restarted)
     useEffect(() => {
         if (userRole !== 'driver' || !currentRide?.route_polyline) return;
@@ -420,7 +449,7 @@ export default function MapWireframe() {
                 user.id,
                 journey,
                 new Date().toISOString(),
-                1,
+                seatsWanted,
                 fareOffer, // saved with the request in the same insert
             );
             if (isCancelled()) {
@@ -510,9 +539,7 @@ export default function MapWireframe() {
         }
         Alert.alert(
             'Cancel this request?',
-            openRequest.status === 'accepted'
-                ? 'Your seat will be given back and the driver will be told.'
-                : 'The driver will be told you no longer need a seat.',
+            'The driver will be told you no longer need a seat.',
             [
                 { text: 'Keep it', style: 'cancel' },
                 {
@@ -656,6 +683,13 @@ export default function MapWireframe() {
                             strokeWidth={3}
                         />
                     )}
+                    {userRole === 'passenger' && driverPos && (
+                        <Marker
+                            coordinate={pt(driverPos.lat, driverPos.lng)}
+                            title="Your driver"
+                            pinColor="blue"
+                        />
+                    )}
                     {userRole === 'passenger' && place && (
                         <Marker coordinate={pt(place.lat, place.lng)} title={place.label} pinColor="red" />
                     )}
@@ -759,6 +793,10 @@ export default function MapWireframe() {
                                         </View>
                                     )}
 
+                                    {etaMin !== null && (
+                                        <Text style={styles.centerStateText}>Your driver is about {etaMin} min away</Text>
+                                    )}
+
                                     {openRequest.status === 'accepted' && !openRequest.picked_up_at && openDepartAt && (() => {
                                         const minsLeft = Math.ceil((new Date(openDepartAt).getTime() - now) / 60000);
                                         return (
@@ -815,6 +853,26 @@ export default function MapWireframe() {
                                         </Text>
                                     )}
 
+                                    <View style={styles.fareRow}>
+                                        <Text style={[styles.sheetLabel, styles.noMarginBottom]}>Seats needed</Text>
+                                        <View style={styles.stepper}>
+                                            <TouchableOpacity
+                                                style={styles.stepperBtn}
+                                                onPress={() => setSeatsWanted((s) => Math.max(1, s - 1))}
+                                                accessibilityLabel="Fewer seats"
+                                            >
+                                                <Text style={styles.stepperBtnText}>−</Text>
+                                            </TouchableOpacity>
+                                            <Text style={styles.stepperValue}>{seatsWanted}</Text>
+                                            <TouchableOpacity
+                                                style={styles.stepperBtn}
+                                                onPress={() => setSeatsWanted((s) => Math.min(4, s + 1))}
+                                                accessibilityLabel="More seats"
+                                            >
+                                                <Text style={styles.stepperBtnText}>+</Text>
+                                            </TouchableOpacity>
+                                        </View>
+                                    </View>
                                     <View style={styles.fareRow}>
                                         <Text style={[styles.sheetLabel, styles.noMarginBottom]}>Your offer</Text>
                                         <View style={styles.stepper}>

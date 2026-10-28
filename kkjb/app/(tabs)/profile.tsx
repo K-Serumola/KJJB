@@ -1,6 +1,6 @@
-import React, { useState } from 'react';
+import React, { useCallback, useState } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Switch, Alert } from 'react-native';
-import { useRouter } from 'expo-router';
+import { useRouter, useFocusEffect } from 'expo-router';
 import { supabase } from '../../lib/supabase';
 import WireframeHeader from '../../components/WireframeHeader';
 import SegmentedControl from '../../components/SegmentedControl';
@@ -9,6 +9,8 @@ import { Colors, ThemeMode, useTheme, useThemedStyles } from '../../components/t
 import { useTabBarHeight } from '../../components/layout';
 import { useUser } from '../../components/UserContext';
 import { switchRole } from '../../services/profileService';
+import { getMyActiveRide } from '../../services/rideService';
+import { getMyOpenRequest } from '../../services/requestService';
 
 // Payment methods that actually exist in Botswana: mobile money, FNB eWallet
 // and cash. (No in-app bank cards - people here mostly don't pay that way.)
@@ -32,8 +34,34 @@ export default function ProfileScreen() {
     const [pinVerification, setPinVerification] = useState(true);
     const [notifications, setNotifications] = useState(true);
 
+    // The switch is locked while you have a ride posted (driver) or a request open (passenger)
+    const [lockReason, setLockReason] = useState<string | null>(null);
+
+    useFocusEffect(
+        useCallback(() => {
+            let alive = true;
+            (async () => {
+                if (!user) return;
+                try {
+                    if (user.role === 'driver') {
+                        const ride = await getMyActiveRide(user.id);
+                        if (alive) setLockReason(ride ? 'Finish or cancel your posted ride to switch to passenger mode.' : null);
+                    } else {
+                        const req = await getMyOpenRequest(user.id);
+                        if (alive) setLockReason(req ? 'Finish or cancel your open request to switch to driver mode.' : null);
+                    }
+                } catch {
+                    if (alive) setLockReason(null);
+                }
+            })();
+            return () => {
+                alive = false;
+            };
+        }, [user?.id, user?.role]),
+    );
+
     const handleToggleDriverMode = async () => {
-        if (!user) return;
+        if (!user || lockReason) return;
         try {
             await switchRole(user.id);   // saves to Supabase
             await refreshProfile();      // every screen updates
@@ -91,9 +119,11 @@ export default function ProfileScreen() {
                                     ? 'Sharing seats on your daily route'
                                     : 'Offer seats and offset fuel costs'}
                             </Text>
+                            {lockReason && <Text style={styles.lockNote}>{lockReason}</Text>}
                         </View>
                         <Switch
                             value={isDriverMode}
+                            disabled={!!lockReason}
                             onValueChange={handleToggleDriverMode}
                             trackColor={switchColors}
                             thumbColor={colors.switchThumb}
@@ -246,6 +276,7 @@ const createStyles = (c: Colors) =>
 
         rowTitle: { color: c.textPrimary, fontSize: 14.5, fontWeight: '600' },
         rowSubtitle: { color: c.textSecondary, fontSize: 12, marginTop: 2 },
+        lockNote: { color: c.danger, fontSize: 11.5, marginTop: 4 },
         metaLine: { color: c.textSecondary, fontSize: 12.5, marginTop: 2 },
         linkText: { color: c.accentText, fontSize: 12.5, fontWeight: '600' },
 
